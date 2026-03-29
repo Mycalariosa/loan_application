@@ -1,0 +1,29 @@
+.card { box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
+.table-sm td, .table-sm th { vertical-align: middle; }
+
+/* Format sheet (spreadsheet-style) */
+.format-sheet-section {
+    border: 1px solid #dee2e6;
+}
+.format-sheet-title {
+    background: #4dd4d4;
+    color: #000;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #2eb8b8;
+    font-size: 1rem;
+}
+.format-sheet-subtitle {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.format-sheet-table thead th {
+    background: #4dd4d4;
+    color: #000;
+    font-weight: 700;
+    border-color: #2eb8b8 !important;
+}
+.format-sheet-table.table-bordered td,
+.format-sheet-table.table-bordered th {
+    border-color: #adb5bd;
+}
