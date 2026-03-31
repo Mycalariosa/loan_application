@@ -22,7 +22,7 @@ define('SAVINGS_WITHDRAW_MAX_PER_DAY', 5);
 define('MONEY_BACK_PERCENT', 2.0);
 
 define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'loan_application');
+define('DB_NAME', 'schema');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
