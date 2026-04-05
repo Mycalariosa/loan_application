@@ -46,8 +46,8 @@ function password_reset_try_send_otp(PDO $pdo, string $username): array
     $user = $st->fetch();
     if (!$user) {
         return [
-            'ok' => true,
-            'message' => 'If that username is registered, a reset code was sent to the email on file.',
+            'ok' => false,
+            'message' => 'No account found with that username. Check the spelling and try again.',
         ];
     }
 
@@ -79,7 +79,7 @@ function password_reset_try_send_otp(PDO $pdo, string $username): array
 
     return [
         'ok' => true,
-        'message' => 'If that username is registered, a reset code was sent to the email on file.',
+        'message' => 'A reset code was sent to the email address on file for this account.',
         'user' => ['username' => $username],
     ];
 }

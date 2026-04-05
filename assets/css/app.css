@@ -1,6 +1,64 @@
 .card { box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
 .table-sm td, .table-sm th { vertical-align: middle; }
 
+/* Forgot password — OTP verification */
+.otp-verify-block {
+    padding: 1rem 0 0.25rem;
+}
+.otp-verify-block .otp-heading {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+.otp-verify-block .otp-hint {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+.otp-verify-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    justify-content: space-between;
+    max-width: 22rem;
+    margin: 0 auto 0.5rem;
+}
+@media (min-width: 400px) {
+    .otp-verify-group {
+        gap: 0.5rem;
+    }
+}
+.otp-digit {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 3.25rem;
+    height: 3.125rem;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.otp-digit:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+    outline: 0;
+}
+.otp-digit.is-filled {
+    border-color: #94a3b8;
+    background-color: #f8fafc;
+}
+.otp-verify-block .invalid-feedback-otp {
+    font-size: 0.8125rem;
+    min-height: 1.25rem;
+}
+
 /* Format sheet (spreadsheet-style) */
 .format-sheet-section {
     border: 1px solid #dee2e6;
