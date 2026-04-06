@@ -231,3 +231,68 @@ VALUES (
   1,
   'active'
 );
+
+-- Sample Basic User: username basicuser / password: password123
+INSERT INTO users (role, username, password_hash, account_type, name, address, gender, birthday, age, email, contact_number, bank_name, bank_account_number, card_holder_name, tin_number, company_name, company_address, company_phone, position, monthly_earnings, registration_status, verified_tag, account_status)
+VALUES (
+  'user',
+  'basicuser',
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  'basic',
+  'Juan Dela Cruz',
+  '123 Main Street, Quezon City, Metro Manila',
+  'male',
+  '1990-05-15',
+  34,
+  'juan.delacruz@email.com',
+  '09123456789',
+  'Banco de Oro',
+  '1234567890',
+  'Juan Dela Cruz',
+  '123456789012',
+  'ABC Company Philippines',
+  '456 Business Ave, Makati City, Metro Manila',
+  '0287654321',
+  'Software Developer',
+  45000.00,
+  'approved',
+  1,
+  'active'
+);
+
+-- Sample Premium User: username premiumuser / password: password123
+INSERT INTO users (role, username, password_hash, account_type, name, address, gender, birthday, age, email, contact_number, bank_name, bank_account_number, card_holder_name, tin_number, company_name, company_address, company_phone, position, monthly_earnings, registration_status, verified_tag, account_status)
+VALUES (
+  'user',
+  'premiumuser',
+  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+  'premium',
+  'Maria Santos',
+  '789 Oak Avenue, Cebu City, Cebu',
+  'female',
+  '1988-09-22',
+  36,
+  'maria.santos@email.com',
+  '09876543210',
+  'Bank of the Philippine Islands',
+  '9876543210',
+  'Maria Santos',
+  '987654321098',
+  'XYZ Technologies Inc.',
+  '321 Tech Boulevard, Cebu Business Park, Cebu City',
+  '0321234567',
+  'Project Manager',
+  75000.00,
+  'approved',
+  1,
+  'active'
+);
+
+-- Create savings account for premium user
+INSERT INTO savings_accounts (user_id, balance, zero_since, updated_at)
+VALUES (
+  (SELECT id FROM users WHERE username = 'premiumuser'),
+  25000.00,
+  NULL,
+  CURRENT_TIMESTAMP
+);

@@ -67,30 +67,124 @@ $list = $pdo->query(
     'SELECT l.*, u.name, u.email, u.username FROM loans l JOIN users u ON u.id = l.user_id WHERE l.status = \'pending\' ORDER BY l.created_at ASC'
 )->fetchAll();
 
-render_header('Loans', $u);
+render_header('Loan Management', $u);
 flash_alert();
 ?>
-<h1 class="h4 mb-3">Loan approvals</h1>
-<?php foreach ($list as $loan): ?>
-<div class="card mb-3 p-3">
-    <p><strong><?= h($loan['name']) ?></strong> (<?= h($loan['username']) ?>) · <?= h($loan['email']) ?></p>
-    <p class="mb-1">Amount: ₱<?= number_format((float) $loan['requested_amount'], 2) ?> · Received (after 3%): ₱<?= number_format((float) $loan['received_amount'], 2) ?> · Term: <?= (int) $loan['term_months'] ?> mo</p>
-    <form method="post" class="row g-2 align-items-end">
-        <input type="hidden" name="loan_id" value="<?= (int) $loan['id'] ?>">
-        <div class="col-md-6">
-            <label class="form-label small">Rejection reason (required to reject)</label>
-            <input type="text" name="reject_reason" class="form-control form-control-sm" placeholder="Reason if rejecting">
+
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-brand mb-2">Loan Management</h1>
+        <p class="text-gray-600">Review and approve pending loan applications.</p>
+    </div>
+
+    <?php if ($list === []): ?>
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Pending Loans</h3>
+                <p class="text-gray-600">All loan applications have been processed.</p>
+            </div>
         </div>
-        <div class="col-auto">
-            <button type="submit" name="approve" class="btn btn-success btn-sm">Approve &amp; release</button>
+    <?php else: ?>
+        <div class="space-y-6">
+            <?php foreach ($list as $loan): ?>
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+                <div class="p-8">
+                    <div class="flex items-start justify-between mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2"><?= h($loan['name']) ?></h3>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <span class="flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    <?= h($loan['username']) ?>
+                                </span>
+                                <span class="flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <?= h($loan['email']) ?>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Applied: <?= h(format_sheet_date($loan['created_at'])) ?>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-blue-900 mb-2">Loan Amount</h4>
+                            <p class="text-2xl font-bold text-blue-600">₱<?= number_format((float) $loan['requested_amount'], 2) ?></p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-green-900 mb-2">Received Amount</h4>
+                            <p class="text-2xl font-bold text-green-600">₱<?= number_format((float) $loan['received_amount'], 2) ?></p>
+                            <p class="text-xs text-green-700 mt-1">After 3% interest</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-purple-900 mb-2">Payment Term</h4>
+                            <p class="text-2xl font-bold text-purple-600"><?= (int) $loan['term_months'] ?> months</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Loan Details</h4>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Interest Rate:</span>
+                                <span class="font-medium">3% (₱<?= number_format((float) $loan['interest_amount'], 2) ?>)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Monthly Installment:</span>
+                                <span class="font-medium">₱<?= number_format(((float) $loan['received_amount'] + (float) $loan['interest_amount']) / (int) $loan['term_months'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Status:</span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Transaction ID:</span>
+                                <span class="font-medium font-mono"><?= h($loan['transaction_id'] ?? 'Processing...') ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" class="space-y-4">
+                        <input type="hidden" name="loan_id" value="<?= (int) $loan['id'] ?>">
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Rejection Reason (required if rejecting)</label>
+                            <input type="text" name="reject_reason" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter reason if rejecting this loan">
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="submit" name="approve" 
+                                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Approve & Release Funds
+                            </button>
+                            <button type="submit" name="reject" 
+                                    onclick="return confirm('Are you sure you want to reject this loan application?');"
+                                    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Reject Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
-        <div class="col-auto">
-            <button type="submit" name="reject" class="btn btn-outline-danger btn-sm">Reject</button>
-        </div>
-    </form>
+    <?php endif; ?>
 </div>
-<?php endforeach; ?>
-<?php if ($list === []): ?>
-<p class="text-muted">No pending loans.</p>
-<?php endif; ?>
 <?php render_footer();
