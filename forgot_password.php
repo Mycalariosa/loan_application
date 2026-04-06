@@ -151,7 +151,7 @@ flash_alert();
                             <div class="otp-verify-group flex gap-2 justify-center mb-4" id="otp-input-group">
                                 <?php for ($d = 0; $d < 6; $d++): ?>
                                     <input type="text"
-                                           class="w-12 h-12 text-center text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           class="otp-digit w-12 h-12 text-center text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                            inputmode="numeric"
                                            maxlength="1"
                                            autocomplete="<?= $d === 0 ? 'one-time-code' : 'off' ?>"
@@ -339,6 +339,11 @@ flash_alert();
         fetch('', {
             method: 'POST',
             body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
             if (data.ok) {
                 otpValidated = true;
                 if (errBox) errBox.classList.add('hidden');
@@ -383,7 +388,7 @@ flash_alert();
             console.error('OTP validation error:', error);
             if (errBox) {
                 errBox.textContent = 'Validation failed. Try again.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
         });
     }
@@ -395,10 +400,13 @@ flash_alert();
 
             sync();
 
-            if (errBox) errBox.classList.add('d-none');
+            if (errBox) errBox.classList.add('hidden');
 
+            // Auto-advance to next input after typing a digit
             if (v && i < cells.length - 1) {
-                cells[i + 1].focus();
+                setTimeout(function() {
+                    cells[i + 1].focus();
+                }, 10);
             }
         });
 
@@ -408,6 +416,14 @@ flash_alert();
                 cells[i - 1].value = '';
                 sync();
                 e.preventDefault();
+            }
+        });
+
+        // Ensure focus stays on current input when typing
+        cell.addEventListener('focus', function() {
+            // Clear the input if it's the first time focusing
+            if (cell.value === '' && i === 0) {
+                // First input, ready to type
             }
         });
     });
@@ -439,7 +455,7 @@ flash_alert();
 
             if (errBox) {
                 errBox.textContent = 'Enter all 6 digits from your email.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
 
             return;
@@ -450,7 +466,7 @@ flash_alert();
             
             if (errBox) {
                 errBox.textContent = 'Please wait for OTP validation to complete.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
             
             return;
@@ -518,9 +534,9 @@ flash_alert();
                 // Show success message before redirecting
                 if (errBox) {
                     errBox.textContent = 'You successfully changed your password! Redirecting to login page...';
-                    errBox.classList.remove('d-none');
-                    errBox.classList.remove('text-danger');
-                    errBox.classList.add('text-success');
+                    errBox.classList.remove('hidden');
+                    errBox.classList.remove('text-red-600');
+                    errBox.classList.add('text-green-600');
                 }
                 
                 // Hide password fields and show success
@@ -534,9 +550,9 @@ flash_alert();
                 // Error - show message without redirecting
                 if (errBox) {
                     errBox.textContent = data.message;
-                    errBox.classList.remove('d-none');
-                    errBox.classList.remove('text-success');
-                    errBox.classList.add('text-danger');
+                    errBox.classList.remove('hidden');
+                    errBox.classList.remove('text-green-600');
+                    errBox.classList.add('text-red-600');
                 }
                 
                 // Shake password fields for error
@@ -553,7 +569,7 @@ flash_alert();
             console.error('Password reset error:', error);
             if (errBox) {
                 errBox.textContent = 'An error occurred. Please try again.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
         });
     });

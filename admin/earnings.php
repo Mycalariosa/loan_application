@@ -37,49 +37,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['distribute'])) {
 $earnings = $pdo->query('SELECT * FROM company_earnings ORDER BY year_year DESC')->fetchAll();
 $mb = $pdo->query('SELECT * FROM money_back_transactions ORDER BY id DESC LIMIT 50')->fetchAll();
 
-render_header('Company earnings', $u);
+render_header('Earnings Management', $u);
 flash_alert();
 foreach ($errors as $e) {
-    echo '<div class="alert alert-danger">' . h($e) . '</div>';
+    echo '<div class="max-w-6xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">' . h($e) . '</div>';
 }
 ?>
-<h1 class="h4 mb-3">Total earnings of the company</h1>
-<p class="text-muted small">Formula per member: (Total income for the year × 2%) ÷ (number of Premium members). Credited to each Premium member’s savings.</p>
 
-<div class="card p-4 mb-4">
-    <h2 class="h6">Record year &amp; distribute money back</h2>
-    <form method="post" class="row g-2 align-items-end">
-        <input type="hidden" name="distribute" value="1">
-        <div class="col-auto">
-            <label class="form-label">Year</label>
-            <input type="number" name="year" class="form-control" value="<?= (int) date('Y') ?>" required>
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-brand mb-2">Earnings Management</h1>
+        <p class="text-gray-600">Manage company earnings and distribute money back to Premium members.</p>
+    </div>
+
+    <!-- Money Back Distribution Form -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 mb-8">
+        <div class="p-8">
+            <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Record Year & Distribute Money Back
+            </h2>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="text-sm font-semibold text-blue-800 mb-1">Distribution Formula</h3>
+                        <p class="text-sm text-blue-700">Formula per member: (Total income for the year × 2%) ÷ (number of Premium members). Credited to each Premium member's savings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-6">
+                <input type="hidden" name="distribute" value="1">
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="year">Year</label>
+                        <input type="number" id="year" name="year" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= (int) date('Y') ?>" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="total_income">Total Company Income (₱)</label>
+                        <input type="number" id="total_income" name="total_income" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" min="1" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-8 rounded-lg transition">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Save & Distribute Money Back
+                </button>
+            </form>
         </div>
-        <div class="col-auto">
-            <label class="form-label">Total company income (₱)</label>
-            <input type="number" name="total_income" class="form-control" step="0.01" min="1" required>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Recorded Earnings -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                    <svg class="w-8 h-8 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Recorded Earnings
+                </h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Year</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($earnings as $e): ?>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4 text-sm font-medium"><?= (int) $e['year_year'] ?></td>
+                                <td class="py-3 px-4 text-sm font-semibold text-green-600">₱<?= number_format((float) $e['total_income'], 2) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <?php if ($earnings === []): ?>
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <p class="text-gray-500">No earnings recorded yet.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-primary">Save &amp; distribute</button>
+
+        <!-- Recent Money Back Transactions -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                    <svg class="w-8 h-8 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Recent Money Back Transactions
+                </h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Year</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">User ID</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Transaction ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($mb as $m): ?>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4 text-sm font-medium"><?= (int) $m['year_year'] ?></td>
+                                <td class="py-3 px-4 text-sm"><?= (int) $m['user_id'] ?></td>
+                                <td class="py-3 px-4 text-sm font-semibold text-purple-600">₱<?= number_format((float) $m['amount'], 2) ?></td>
+                                <td class="py-3 px-4 text-sm font-mono"><?= h($m['transaction_id']) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <?php if ($mb === []): ?>
+                    <div class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        <p class="text-gray-500">No money back transactions yet.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
-    </form>
+    </div>
 </div>
-
-<h2 class="h6">Recorded earnings</h2>
-<table class="table table-sm"><thead><tr><th>Year</th><th>Total income</th></tr></thead><tbody>
-<?php foreach ($earnings as $e): ?>
-<tr><td><?= (int) $e['year_year'] ?></td><td>₱<?= number_format((float) $e['total_income'], 2) ?></td></tr>
-<?php endforeach; ?>
-</tbody></table>
-
-<h2 class="h6 mt-4">Recent money back transactions</h2>
-<table class="table table-sm"><thead><tr><th>Year</th><th>User</th><th>Amount</th><th>Txn ID</th></tr></thead><tbody>
-<?php foreach ($mb as $m): ?>
-<tr>
-    <td><?= (int) $m['year_year'] ?></td>
-    <td><?= (int) $m['user_id'] ?></td>
-    <td>₱<?= number_format((float) $m['amount'], 2) ?></td>
-    <td><small><?= h($m['transaction_id']) ?></small></td>
-</tr>
-<?php endforeach; ?>
-</tbody></table>
 <?php render_footer();

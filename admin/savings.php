@@ -61,40 +61,121 @@ $list = $pdo->query(
     'SELECT t.*, u.username, u.name, u.email FROM savings_transactions t JOIN users u ON u.id = t.user_id ORDER BY t.id DESC LIMIT 200'
 )->fetchAll();
 
-render_header('Savings (all)', $u);
+render_header('Savings Management', $u);
 flash_alert();
 ?>
-<h1 class="h4 mb-3">Savings transactions (all users)</h1>
-<div class="table-responsive">
-    <table class="table table-sm table-striped">
-        <thead><tr><th>No.</th><th>Txn ID</th><th>User</th><th>Category</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>
-        <?php foreach ($list as $t): ?>
-            <tr>
-                <td><?= (int) $t['txn_no'] ?></td>
-                <td><small><?= h($t['transaction_id']) ?></small></td>
-                <td><?= h($t['username']) ?></td>
-                <td><?= h(savings_category_label((string) $t['category'])) ?></td>
-                <td>₱<?= number_format((float) $t['amount'], 2) ?></td>
-                <td><?= h($t['status']) ?></td>
-                <td>
-                    <?php if ($t['category'] === 'withdrawal' && $t['status'] === 'pending'): ?>
-                    <form method="post" class="d-inline">
-                        <input type="hidden" name="txn_db_id" value="<?= (int) $t['id'] ?>">
-                        <button type="submit" name="approve" class="btn btn-sm btn-success">Approve</button>
-                    </form>
-                    <form method="post" class="d-inline">
-                        <input type="hidden" name="txn_db_id" value="<?= (int) $t['id'] ?>">
-                        <input type="text" name="admin_note" class="form-control form-control-sm d-inline w-auto" placeholder="Reject note">
-                        <button type="submit" name="reject" class="btn btn-sm btn-outline-danger">Reject</button>
-                    </form>
-                    <?php else: ?>
-                    <small><?= h($t['admin_note'] ?? '') ?></small>
-                    <?php endif; ?>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
+
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-brand mb-2">Savings Management</h1>
+        <p class="text-gray-600">Process withdrawal requests and monitor all savings transactions.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div class="p-8">
+            <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                Savings Transactions (All Users)
+            </h2>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">#</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Transaction ID</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">User</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Amount</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($list as $t): ?>
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="py-4 px-4 text-sm font-medium"><?= (int) $t['txn_no'] ?></td>
+                            <td class="py-4 px-4 text-sm font-mono"><?= h($t['transaction_id']) ?></td>
+                            <td class="py-4 px-4">
+                                <div class="font-medium text-gray-900"><?= h($t['username']) ?></div>
+                                <div class="text-sm text-gray-500"><?= h($t['name']) ?></div>
+                            </td>
+                            <td class="py-4 px-4">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    <?php 
+                                    $catColor = 'bg-gray-100 text-gray-800';
+                                    if ($t['category'] === 'deposit') $catColor = 'bg-green-100 text-green-800';
+                                    elseif ($t['category'] === 'withdrawal') $catColor = 'bg-red-100 text-red-800';
+                                    echo $catColor;
+                                    ?>">
+                                    <?= h(savings_category_label((string) $t['category'])) ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-4">
+                                <span class="font-semibold <?= $t['category'] === 'deposit' ? 'text-green-600' : 'text-red-600' ?>">
+                                    ₱<?= number_format((float) $t['amount'], 2) ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-4">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    <?php 
+                                    $statusColor = 'bg-gray-100 text-gray-800';
+                                    if ($t['status'] === 'completed') $statusColor = 'bg-green-100 text-green-800';
+                                    elseif ($t['status'] === 'pending') $statusColor = 'bg-yellow-100 text-yellow-800';
+                                    elseif ($t['status'] === 'rejected') $statusColor = 'bg-red-100 text-red-800';
+                                    echo $statusColor;
+                                    ?>">
+                                    <?= h(ucfirst($t['status'])) ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-4">
+                                <?php if ($t['category'] === 'withdrawal' && $t['status'] === 'pending'): ?>
+                                    <div class="flex gap-2">
+                                        <form method="post" class="inline">
+                                            <input type="hidden" name="txn_db_id" value="<?= (int) $t['id'] ?>">
+                                            <button type="submit" name="approve" 
+                                                    class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
+                                                Approve
+                                            </button>
+                                        </form>
+                                        <form method="post" class="inline-flex gap-2">
+                                            <input type="hidden" name="txn_db_id" value="<?= (int) $t['id'] ?>">
+                                            <input type="text" name="admin_note" 
+                                                   class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" 
+                                                   placeholder="Reject reason">
+                                            <button type="submit" name="reject" 
+                                                    class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-sm text-gray-600">
+                                        <?= h($t['admin_note'] ?? 'No notes') ?>
+                                        <?php if ($t['processed_at']): ?>
+                                        <br><small class="text-gray-400">Processed: <?= h(format_sheet_date($t['processed_at'])) ?></small>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            
+            <?php if ($list === []): ?>
+                <div class="text-center py-8">
+                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Savings Transactions</h3>
+                    <p class="text-gray-600">No savings transactions found in the system.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
 <?php render_footer();

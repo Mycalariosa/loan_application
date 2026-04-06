@@ -71,121 +71,283 @@ if ($yearFilter && $monthFilter) {
 render_header('Billing', $u);
 flash_alert();
 ?>
-<h1 class="h4 mb-3">Billing</h1>
 
-<?php if ($summaryLoan && $summarySchedule !== []): ?>
-<div class="format-sheet-section card p-0 overflow-hidden mb-4">
-    <div class="format-sheet-title">Billing Summary</div>
-    <div class="p-4">
-        <table class="table table-sm table-bordered w-auto mb-4">
-            <tbody>
-                <tr><th class="bg-light">Loan Amount</th><td class="text-end">₱<?= number_format((float) $summaryLoan['requested_amount'], 2) ?></td></tr>
-                <tr><th class="bg-light">Interest Rate (3%)</th><td class="text-end">₱<?= number_format((float) $summaryLoan['interest_amount'], 2) ?></td></tr>
-                <tr><th class="bg-light">Total Amount on Hand</th><td class="text-end"><strong>₱<?= number_format((float) $summaryLoan['received_amount'], 2) ?></strong></td></tr>
-            </tbody>
-        </table>
-        <div class="format-sheet-subtitle">Monthly Payments <span class="text-danger">(<?= (int) $summaryLoan['term_months'] ?> payable months)</span></div>
-        <div class="table-responsive">
-            <table class="table table-sm table-bordered format-sheet-table mb-0" style="max-width: 28rem;">
-                <thead>
-                    <tr><th>Due Date</th><th>Amount</th></tr>
-                </thead>
-                <tbody>
-                <?php foreach ($summarySchedule as $s): ?>
-                    <?php
-                    $dueTs = strtotime((string) $s['due_date']);
-                    $dueDisp = $dueTs ? date('m/d/y', $dueTs) : h((string) $s['due_date']);
-                    $installment = (float) $s['monthly_principal'] + (float) $s['interest_display'];
-                    ?>
-                    <tr>
-                        <td><?= h($dueDisp) ?></td>
-                        <td class="text-end">₱<?= number_format($installment, 2) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-brand mb-2">Billing & Payments</h1>
+        <p class="text-gray-600">View your billing statements, payment schedules, and payment history.</p>
+    </div>
+
+    <?php if ($summaryLoan && $summarySchedule !== []): ?>
+    <!-- Billing Summary -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 mb-8">
+        <div class="p-8">
+            <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Billing Summary
+            </h2>
+            
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Loan Amount</h3>
+                    <p class="text-2xl font-bold text-brand">₱<?= number_format((float) $summaryLoan['requested_amount'], 2) ?></p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Interest (3%)</h3>
+                    <p class="text-2xl font-bold text-red-600">₱<?= number_format((float) $summaryLoan['interest_amount'], 2) ?></p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Total Received</h3>
+                    <p class="text-2xl font-bold text-green-600">₱<?= number_format((float) $summaryLoan['received_amount'], 2) ?></p>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Payment Schedule</h3>
+                <p class="text-sm text-gray-600 mb-4">Payment Schedule (<?= (int) $summaryLoan['term_months'] ?> months)</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Due Date</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Installment Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($summarySchedule as $s): ?>
+                                <?php
+                                $dueTs = strtotime((string) $s['due_date']);
+                                $dueDisp = $dueTs ? date('m/d/y', $dueTs) : h((string) $s['due_date']);
+                                $installment = (float) $s['monthly_principal'] + (float) $s['interest_display'];
+                                ?>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-4 text-sm"><?= h($dueDisp) ?></td>
+                                    <td class="py-3 px-4 text-sm font-semibold">₱<?= number_format($installment, 2) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">
+                    <strong>Note:</strong> Installment = principal + allocated interest for that month. Penalties (if any) apply on overdue periods only.
+                </p>
+            </div>
         </div>
-        <p class="small text-muted mb-0 mt-2">Installment = principal + allocated interest for that month. Penalties (if any) apply on overdue periods only.</p>
     </div>
-</div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<?php if (!$current): ?>
-    <div class="alert alert-secondary">No bills to pay.</div>
-<?php else: ?>
-    <div class="card p-4 mb-4">
-        <h2 class="h6 text-muted">Current billing (this period)</h2>
-        <p class="small mb-2">Date generated: <?= h(format_sheet_date($current['date_generated'] ?? null)) ?> · Due: <?= h(format_sheet_date($current['due_date'] ?? null)) ?> · Status: <?= h($current['status']) ?></p>
-        <div class="table-responsive">
-            <table class="table table-sm">
-                <tbody>
-                    <tr><th>Borrower</th><td><?= h($u['name']) ?></td></tr>
-                    <tr><th>Account type</th><td><?= h($u['account_type']) ?></td></tr>
-                    <tr><th>Loaned amount</th><td>₱<?= number_format((float) $current['loaned_amount'], 2) ?></td></tr>
-                    <tr><th>Received amount</th><td>₱<?= number_format((float) $current['received_amount'], 2) ?></td></tr>
-                    <tr><th>Amount for this month (principal)</th><td>₱<?= number_format((float) $current['monthly_principal'], 2) ?></td></tr>
-                    <tr><th>Interest (3% total, allocated)</th><td>₱<?= number_format((float) $current['interest_display'], 2) ?></td></tr>
-                    <tr><th>Penalty (2% on missed month)</th><td>₱<?= number_format((float) $current['penalty_amount'], 2) ?> (<?= h((string) $current['penalty_percent']) ?>%)</td></tr>
-                    <tr><th>Total due</th><td><strong>₱<?= number_format((float) $current['total_due'], 2) ?></strong></td></tr>
-                </tbody>
-            </table>
+    <?php if (!$current): ?>
+        <!-- No Bills -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Bills to Pay</h3>
+                <p class="text-gray-600">You don't have any outstanding bills at this time.</p>
+            </div>
         </div>
-        <form method="post" onsubmit="return confirm('Record payment for this period?');">
-            <input type="hidden" name="pay_billing" value="1">
-            <input type="hidden" name="billing_id" value="<?= (int) $current['id'] ?>">
-            <button type="submit" class="btn btn-success">Pay now (simulate)</button>
-        </form>
-    </div>
-<?php endif; ?>
+    <?php else: ?>
+        <!-- Current Billing -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 mb-8">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                    <svg class="w-8 h-8 mr-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Current Billing Period
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Billing Information</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Date Generated:</span>
+                                <span class="font-medium"><?= h(format_sheet_date($current['date_generated'] ?? null)) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Due Date:</span>
+                                <span class="font-medium"><?= h(format_sheet_date($current['due_date'] ?? null)) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Status:</span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    <?php 
+                                    $statusColor = 'bg-gray-100 text-gray-800';
+                                    if ($current['status'] === 'pending') $statusColor = 'bg-yellow-100 text-yellow-800';
+                                    elseif ($current['status'] === 'overdue') $statusColor = 'bg-red-100 text-red-800';
+                                    elseif ($current['status'] === 'paid') $statusColor = 'bg-green-100 text-green-800';
+                                    echo $statusColor;
+                                    ?>">
+                                    <?= h(ucfirst($current['status'])) ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Details</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Borrower:</span>
+                                <span class="font-medium"><?= h($u['name']) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Account Type:</span>
+                                <span class="font-medium"><?= h(ucfirst($u['account_type'])) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<div class="card p-4">
-    <h2 class="h6">Billing history</h2>
-    <p class="small text-muted">Sorted by year, then month. Select a month to see details.</p>
-    <ul class="list-unstyled">
-        <?php
-        $byYear = [];
-        foreach ($grouped as $g) {
-            $byYear[(int) $g['period_year']][] = (int) $g['period_month'];
-        }
-        krsort($byYear);
-        foreach ($byYear as $y => $months):
-            rsort($months);
-        ?>
-        <li class="mb-2"><strong><?= $y ?></strong>
-            <ul>
-                <?php foreach ($months as $m): ?>
-                <li><a href="<?= h(app_url('billing.php?y=' . $y . '&m=' . $m)) ?>"><?= date('F', mktime(0, 0, 0, $m, 1)) ?></a></li>
-                <?php endforeach; ?>
-            </ul>
-        </li>
-        <?php endforeach; ?>
-        <?php if ($grouped === []): ?>
-            <li>No billing history yet.</li>
-        <?php endif; ?>
-    </ul>
-</div>
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Breakdown</h3>
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Loaned Amount:</span>
+                                <span class="font-medium">₱<?= number_format((float) $current['loaned_amount'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Received Amount:</span>
+                                <span class="font-medium">₱<?= number_format((float) $current['received_amount'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Monthly Principal:</span>
+                                <span class="font-medium">₱<?= number_format((float) $current['monthly_principal'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Interest (3%):</span>
+                                <span class="font-medium">₱<?= number_format((float) $current['interest_display'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Penalty (2%):</span>
+                                <span class="font-medium">₱<?= number_format((float) $current['penalty_amount'], 2) ?> (<?= h((string) $current['penalty_percent']) ?>%)</span>
+                            </div>
+                            <div class="border-t border-gray-300 pt-3 mt-3">
+                                <div class="flex justify-between">
+                                    <span class="text-lg font-semibold text-gray-900">Total Due:</span>
+                                    <span class="text-lg font-bold text-red-600">₱<?= number_format((float) $current['total_due'], 2) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<?php if ($yearFilter && $monthFilter && $detailRows !== []): ?>
-<div class="card p-4 mt-3">
-    <h2 class="h6"><?= h((string) $monthFilter) ?>/<?= h((string) $yearFilter) ?> — details</h2>
-    <div class="table-responsive">
-        <table class="table table-sm">
-            <thead><tr><th>Due</th><th>Principal</th><th>Interest</th><th>Penalty</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody>
-            <?php foreach ($detailRows as $r): ?>
-                <tr>
-                    <td><?= h($r['due_date']) ?></td>
-                    <td>₱<?= number_format((float) $r['monthly_principal'], 2) ?></td>
-                    <td>₱<?= number_format((float) $r['interest_display'], 2) ?></td>
-                    <td>₱<?= number_format((float) $r['penalty_amount'], 2) ?></td>
-                    <td>₱<?= number_format((float) $r['total_due'], 2) ?></td>
-                    <td><?= h($r['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                <div class="mt-8">
+                    <form method="post" onsubmit="return confirm('Record payment for this period?');" class="inline-block">
+                        <input type="hidden" name="pay_billing" value="1">
+                        <input type="hidden" name="billing_id" value="<?= (int) $current['id'] ?>">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition">
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Pay Now (Simulated)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Billing History -->
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div class="p-8">
+            <h2 class="text-2xl font-bold text-brand mb-6 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Billing History
+            </h2>
+            
+            <p class="text-gray-600 mb-6">Browse your billing history by year and month. Select a month to view detailed information.</p>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">History by Year</h3>
+                    <div class="space-y-4">
+                        <?php
+                        $byYear = [];
+                        foreach ($grouped as $g) {
+                            $byYear[(int) $g['period_year']][] = (int) $g['period_month'];
+                        }
+                        krsort($byYear);
+                        foreach ($byYear as $y => $months):
+                            rsort($months);
+                        ?>
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-2"><?= $y ?></h4>
+                            <div class="flex flex-wrap gap-2">
+                                <?php foreach ($months as $m): ?>
+                                <a href="<?= h(app_url('billing.php?y=' . $y . '&m=' . $m)) ?>" 
+                                   class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">
+                                    <?= date('M', mktime(0, 0, 0, $m, 1)) ?>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                        <?php if ($grouped === []): ?>
+                            <div class="text-center py-8 text-gray-500">
+                                <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <p>No billing history yet.</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <?php if ($yearFilter && $monthFilter && $detailRows !== []): ?>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <?= date('F Y', mktime(0, 0, 0, (int) $monthFilter, 1, (int) $yearFilter)) ?> — Details
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Due Date</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Principal</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Interest</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Penalty</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Total</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($detailRows as $r): ?>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                    <td class="py-3 px-4 text-sm"><?= h($r['due_date']) ?></td>
+                                    <td class="py-3 px-4 text-sm">₱<?= number_format((float) $r['monthly_principal'], 2) ?></td>
+                                    <td class="py-3 px-4 text-sm">₱<?= number_format((float) $r['interest_display'], 2) ?></td>
+                                    <td class="py-3 px-4 text-sm">₱<?= number_format((float) $r['penalty_amount'], 2) ?></td>
+                                    <td class="py-3 px-4 text-sm font-semibold">₱<?= number_format((float) $r['total_due'], 2) ?></td>
+                                    <td class="py-3 px-4 text-sm">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                            <?php 
+                                            $statusColor = 'bg-gray-100 text-gray-800';
+                                            if ($r['status'] === 'pending') $statusColor = 'bg-yellow-100 text-yellow-800';
+                                            elseif ($r['status'] === 'overdue') $statusColor = 'bg-red-100 text-red-800';
+                                            elseif ($r['status'] === 'paid') $statusColor = 'bg-green-100 text-green-800';
+                                            echo $statusColor;
+                                            ?>">
+                                            <?= h(ucfirst($r['status'])) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
-<?php endif; ?>
 
 <?php render_footer();
