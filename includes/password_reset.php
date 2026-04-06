@@ -85,6 +85,47 @@ function password_reset_try_send_otp(PDO $pdo, string $username): array
 }
 
 /**
+ * @return array{ok:bool, message:string, expires_in?:int}
+ */
+function password_reset_validate_otp(PDO $pdo, string $username, string $otp): array
+{
+    $username = trim($username);
+    $otp = trim($otp);
+    
+    if ($username === '' || $otp === '') {
+        return ['ok' => false, 'message' => 'Username and code are required.'];
+    }
+
+    $st = $pdo->prepare('SELECT * FROM users WHERE username = ? LIMIT 1');
+    $st->execute([$username]);
+    $user = $st->fetch();
+    if (!$user) {
+        return ['ok' => false, 'message' => 'Invalid username.'];
+    }
+
+    $uid = (int) $user['id'];
+    $st = $pdo->prepare(
+        'SELECT *, TIMESTAMPDIFF(MINUTE, NOW(), expires_at) as minutes_left FROM password_reset_otps WHERE user_id = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1'
+    );
+    $st->execute([$uid]);
+    $row = $st->fetch();
+    
+    if (!$row) {
+        return ['ok' => false, 'message' => 'Code expired. Request a new one.'];
+    }
+    
+    if (!password_verify($otp, $row['otp_hash'])) {
+        return ['ok' => false, 'message' => 'Incorrect code. Try again.'];
+    }
+
+    return [
+        'ok' => true, 
+        'message' => 'Code verified successfully.',
+        'expires_in' => (int) $row['minutes_left']
+    ];
+}
+
+/**
  * @return array{ok:bool, message:string}
  */
 function password_reset_apply(PDO $pdo, string $username, string $otp, string $newPass, string $newPass2): array

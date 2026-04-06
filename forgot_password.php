@@ -16,12 +16,26 @@ if (current_user()) {
 
 if (isset($_GET['restart']) && $_GET['restart'] === '1') {
     unset($_SESSION['pw_reset_username']);
+    unset($_SESSION['otp_request_time']); // Clear OTP request time
     header('Location: ' . app_url('forgot_password.php'));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pwAction = (string) ($_POST['pw_action'] ?? '');
+
+    // Handle AJAX OTP validation
+    if ($pwAction === 'validate_otp') {
+        header('Content-Type: application/json');
+        $pdo = db();
+        $result = password_reset_validate_otp(
+            $pdo,
+            (string) ($_POST['username'] ?? ''),
+            (string) ($_POST['otp'] ?? '')
+        );
+        echo json_encode($result);
+        exit;
+    }
 
     if ($pwAction === 'send_otp') {
         $pdo = db();
@@ -30,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($r['ok']) {
             if (isset($r['user']['username'])) {
                 $_SESSION['pw_reset_username'] = $r['user']['username'];
+                // Store OTP request time for countdown
+                $_SESSION['otp_request_time'] = time();
             }
             flash_set('ok', $r['message']);
         } else {
@@ -54,6 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             unset($_SESSION['pw_reset_username']);
             flash_set('ok', $r['message']);
             header('Location: ' . app_url('login.php'));
+            exit;
+        }
+
+        // For AJAX requests, return JSON instead of redirecting
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'message' => $r['message']]);
             exit;
         }
 
@@ -113,25 +136,20 @@ flash_alert();
                     </form>
 
                 <?php else: ?>
-                    <p class="text-muted mb-2">
-                        Check your email for the 6-digit code, then set a new password for:
-                    </p>
-
-                    <p class="fw-semibold mb-4"><?= h($pwResetUsername) ?></p>
-
                     <form method="post" class="vstack gap-3" id="fp-reset-form" novalidate>
                         <input type="hidden" name="pw_action" value="reset_password">
                         <input type="hidden" name="pw_username" value="<?= h($pwResetUsername) ?>">
                         <input type="hidden" name="pw_otp" id="fp-otp-hidden" value="">
 
                         <!-- OTP -->
-                        <div class="otp-verify-block">
+                        <div class="otp-verify-block" id="otp-section">
                             <div class="otp-heading">Verification code</div>
                             <p class="otp-hint mb-0">
-                                Enter the 6-digit code from your email. It expires in <?= (int) PASSWORD_RESET_OTP_MINUTES ?> minutes.
+                                Enter the 6-digit code from your email. 
+                                <span id="otp-countdown" class="text-primary fw-semibold"></span>
                             </p>
 
-                            <div class="otp-verify-group mt-2">
+                            <div class="otp-verify-group mt-2" id="otp-input-group">
                                 <?php for ($d = 0; $d < 6; $d++): ?>
                                     <input type="text"
                                            class="form-control otp-digit"
@@ -144,6 +162,13 @@ flash_alert();
                             </div>
 
                             <div id="fp-otp-error" class="text-danger d-none text-center mt-2"></div>
+                        </div>
+
+                        <!-- REQUEST NEW CODE BUTTON (HIDDEN INITIALLY) -->
+                        <div id="request-new-code" style="display:none;" class="mt-3">
+                            <button type="button" class="btn btn-outline-primary w-100" id="btn-request-new">
+                                Request new verification code
+                            </button>
                         </div>
 
                         <!-- PASSWORD BLOCK (HIDDEN INITIALLY) -->
@@ -195,6 +220,57 @@ flash_alert();
     var hidden = document.getElementById('fp-otp-hidden');
     var errBox = document.getElementById('fp-otp-error');
     var pwBlock = document.getElementById('password-block');
+    var countdownEl = document.getElementById('otp-countdown');
+    var otpSection = document.getElementById('otp-section');
+    var username = document.querySelector('input[name="pw_username"]').value;
+    
+    var otpValidated = false;
+    var countdownInterval;
+    // Calculate time left based on when OTP was requested
+    var otpRequestTime = <?= (int) ($_SESSION['otp_request_time'] ?? 0) ?> * 1000; // Convert to milliseconds
+    var totalTime = <?= PASSWORD_RESET_OTP_MINUTES ?> * 60 * 1000; // Total time in milliseconds
+    var elapsed = Date.now() - otpRequestTime;
+    var timeLeft = Math.max(0, Math.floor((totalTime - elapsed) / 1000)); // Convert back to seconds
+
+    // Countdown timer
+    function updateCountdown() {
+        if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            countdownEl.textContent = 'Code expired.';
+            countdownEl.className = 'text-danger fw-semibold';
+            
+            // Clear OTP inputs
+            cells.forEach(function(cell) {
+                cell.value = '';
+                cell.disabled = true;
+            });
+            
+            // Show request new code button
+            if (errBox) {
+                errBox.textContent = 'Your verification code has expired. Request a new one below.';
+                errBox.classList.remove('d-none');
+            }
+            
+            // Show request new code button
+            var requestNewBtn = document.getElementById('request-new-code');
+            if (requestNewBtn) {
+                requestNewBtn.style.display = 'block';
+            }
+            
+            pwBlock.style.display = 'none';
+            return;
+        }
+
+        var minutes = Math.floor(timeLeft / 60);
+        var seconds = timeLeft % 60;
+        countdownEl.textContent = 'Expires in ' + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+        
+        timeLeft--;
+    }
+
+    // Start countdown
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
 
     function sync() {
         var s = '';
@@ -207,14 +283,72 @@ flash_alert();
 
         if (hidden) hidden.value = s;
 
-        // SHOW PASSWORD BLOCK ONLY WHEN OTP IS COMPLETE
-        if (pwBlock) {
-            if (s.length === 6) {
-                pwBlock.style.display = 'block';
-            } else {
-                pwBlock.style.display = 'none';
-            }
+        // Validate OTP when complete
+        if (s.length === 6 && !otpValidated) {
+            validateOTP(s);
+        } else if (s.length < 6) {
+            otpValidated = false;
+            pwBlock.style.display = 'none';
         }
+    }
+
+    function validateOTP(otp) {
+        var formData = new FormData();
+        formData.append('pw_action', 'validate_otp');
+        formData.append('username', username);
+        formData.append('otp', otp);
+
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.ok) {
+                otpValidated = true;
+                if (errBox) errBox.classList.add('d-none');
+                
+                // Hide entire OTP section and show password block
+                if (otpSection) otpSection.style.display = 'none';
+                
+                // Disable OTP inputs to prevent changes
+                cells.forEach(function(cell) {
+                    cell.disabled = true;
+                    cell.readOnly = true;
+                });
+                
+                pwBlock.style.display = 'block';
+                
+                // Update countdown with actual time left from server
+                if (data.expires_in && countdownEl) {
+                    timeLeft = data.expires_in * 60;
+                }
+            } else {
+                otpValidated = false;
+                if (errBox) {
+                    errBox.textContent = data.message;
+                    errBox.classList.remove('d-none');
+                }
+                pwBlock.style.display = 'none';
+                
+                // Shake animation for wrong OTP
+                cells.forEach(function(cell) {
+                    cell.classList.add('is-invalid');
+                    setTimeout(function() {
+                        cell.classList.remove('is-invalid');
+                    }, 500);
+                });
+            }
+        })
+        .catch(function(error) {
+            console.error('OTP validation error:', error);
+            if (errBox) {
+                errBox.textContent = 'Validation failed. Try again.';
+                errBox.classList.remove('d-none');
+            }
+        });
     }
 
     cells.forEach(function (cell, i) {
@@ -273,9 +407,96 @@ flash_alert();
 
             return;
         }
+
+        if (!otpValidated) {
+            e.preventDefault();
+            
+            if (errBox) {
+                errBox.textContent = 'Please wait for OTP validation to complete.';
+                errBox.classList.remove('d-none');
+            }
+            
+            return;
+        }
+
+        // Handle password submission via AJAX
+        e.preventDefault();
+        
+        var formData = new FormData(form);
+        // Add AJAX header to trigger JSON response
+        formData.append('ajax', '1');
+        
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            console.log('Password reset response:', data); // Debug log
+            if (data.ok) {
+                // Success - redirect to login
+                window.location.href = '<?= app_url('login.php') ?>';
+            } else {
+                // Error - show message without redirecting
+                if (errBox) {
+                    errBox.textContent = data.message;
+                    errBox.classList.remove('d-none');
+                }
+                
+                // Shake password fields for error
+                var pwInputs = document.querySelectorAll('#fp-new, #fp-new2');
+                pwInputs.forEach(function(input) {
+                    input.classList.add('is-invalid');
+                    setTimeout(function() {
+                        input.classList.remove('is-invalid');
+                    }, 500);
+                });
+            }
+        })
+        .catch(function(error) {
+            console.error('Password reset error:', error);
+            if (errBox) {
+                errBox.textContent = 'An error occurred. Please try again.';
+                errBox.classList.remove('d-none');
+            }
+        });
     });
 
     if (cells[0]) cells[0].focus();
+
+    // Handle request new code button
+    var requestNewBtn = document.getElementById('btn-request-new');
+    if (requestNewBtn) {
+        requestNewBtn.addEventListener('click', function() {
+            var formData = new FormData();
+            formData.append('pw_action', 'send_otp');
+            formData.append('pw_username', username);
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(response) {
+                return response.text();
+            })
+            .then(function(data) {
+                // Reload page to show new OTP
+                window.location.reload();
+            })
+            .catch(function(error) {
+                console.error('Request new code error:', error);
+                if (errBox) {
+                    errBox.textContent = 'Failed to request new code. Please try again.';
+                    errBox.classList.remove('d-none');
+                }
+            });
+        });
+    }
 })();
 </script>
 <?php endif; ?>
