@@ -66,17 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             (string) ($_POST['pw_new2'] ?? '')
         );
 
+        // For AJAX requests, return JSON instead of redirecting
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+            header('Content-Type: application/json');
+            echo json_encode($r);
+            exit;
+        }
+
         if ($r['ok']) {
             unset($_SESSION['pw_reset_username']);
             flash_set('ok', $r['message']);
             header('Location: ' . app_url('login.php'));
-            exit;
-        }
-
-        // For AJAX requests, return JSON instead of redirecting
-        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
-            header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'message' => $r['message']]);
             exit;
         }
 
@@ -230,10 +230,19 @@ flash_alert();
     var otpRequestTime = <?= (int) ($_SESSION['otp_request_time'] ?? 0) ?> * 1000; // Convert to milliseconds
     var totalTime = <?= PASSWORD_RESET_OTP_MINUTES ?> * 60 * 1000; // Total time in milliseconds
     var elapsed = Date.now() - otpRequestTime;
-    var timeLeft = Math.max(0, Math.floor((totalTime - elapsed) / 1000)); // Convert back to seconds
+    var initialTimeLeft = Math.max(0, Math.floor((totalTime - elapsed) / 1000)); // Convert back to seconds
+    var timeLeft = initialTimeLeft;
+    
+    // Debug: Log initial values
+    console.log('OTP Request Time:', otpRequestTime);
+    console.log('Total Time:', totalTime);
+    console.log('Elapsed:', elapsed);
+    console.log('Initial Time Left:', initialTimeLeft);
 
     // Countdown timer
     function updateCountdown() {
+        console.log('Current timeLeft:', timeLeft); // Debug log
+        
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
             countdownEl.textContent = 'Code expired.';
@@ -271,6 +280,36 @@ flash_alert();
     // Start countdown
     updateCountdown();
     countdownInterval = setInterval(updateCountdown, 1000);
+    
+    // If initial timeLeft is 0 or negative, but OTP was recently requested, 
+    // recalculate based on server time
+    if (initialTimeLeft <= 0 && <?= (int) ($_SESSION['otp_request_time'] ?? 0) ?> > 0) {
+        // Make a server request to get the actual time left
+        var formData = new FormData();
+        formData.append('pw_action', 'validate_otp');
+        formData.append('username', username);
+        formData.append('otp', '000000'); // Dummy OTP to check expiry
+        
+        fetch('', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.expires_in && data.expires_in > 0) {
+                // Reset countdown with server time
+                clearInterval(countdownInterval);
+                timeLeft = data.expires_in * 60;
+                updateCountdown();
+                countdownInterval = setInterval(updateCountdown, 1000);
+            }
+        })
+        .catch(function(error) {
+            console.error('Error checking OTP expiry:', error);
+        });
+    }
 
     function sync() {
         var s = '';
@@ -333,13 +372,17 @@ flash_alert();
                 }
                 pwBlock.style.display = 'none';
                 
-                // Shake animation for wrong OTP
+                // Clear all OTP inputs for re-typing
                 cells.forEach(function(cell) {
-                    cell.classList.add('is-invalid');
-                    setTimeout(function() {
-                        cell.classList.remove('is-invalid');
-                    }, 500);
+                    cell.value = '';
+                    cell.classList.remove('is-invalid');
                 });
+                hidden.value = '';
+                
+                // Focus back to first input
+                if (cells[0]) {
+                    cells[0].focus();
+                }
             }
         })
         .catch(function(error) {
@@ -422,6 +465,45 @@ flash_alert();
         // Handle password submission via AJAX
         e.preventDefault();
         
+        // Validate passwords before sending
+        var newPass = document.getElementById('fp-new').value;
+        var newPass2 = document.getElementById('fp-new2').value;
+        
+        if (newPass !== newPass2) {
+            if (errBox) {
+                errBox.textContent = 'New passwords do not match.';
+                errBox.classList.remove('d-none');
+            }
+            
+            // Shake password fields for error
+            var pwInputs = document.querySelectorAll('#fp-new, #fp-new2');
+            pwInputs.forEach(function(input) {
+                input.classList.add('is-invalid');
+                setTimeout(function() {
+                    input.classList.remove('is-invalid');
+                }, 500);
+            });
+            return;
+        }
+        
+        // Validate password strength
+        if (newPass.length < 8 || !/[A-Z]/.test(newPass) || !/[a-z]/.test(newPass) || !/\d/.test(newPass) || !/[^A-Za-z0-9]/.test(newPass)) {
+            if (errBox) {
+                errBox.textContent = 'Password must be at least 8 characters with upper, lower, number, and a special character.';
+                errBox.classList.remove('d-none');
+            }
+            
+            // Shake password fields for error
+            var pwInputs = document.querySelectorAll('#fp-new, #fp-new2');
+            pwInputs.forEach(function(input) {
+                input.classList.add('is-invalid');
+                setTimeout(function() {
+                    input.classList.remove('is-invalid');
+                }, 500);
+            });
+            return;
+        }
+        
         var formData = new FormData(form);
         // Add AJAX header to trigger JSON response
         formData.append('ajax', '1');
@@ -439,13 +521,28 @@ flash_alert();
         .then(function(data) {
             console.log('Password reset response:', data); // Debug log
             if (data.ok) {
-                // Success - redirect to login
-                window.location.href = '<?= app_url('login.php') ?>';
+                // Show success message before redirecting
+                if (errBox) {
+                    errBox.textContent = 'You successfully changed your password! Redirecting to login page...';
+                    errBox.classList.remove('d-none');
+                    errBox.classList.remove('text-danger');
+                    errBox.classList.add('text-success');
+                }
+                
+                // Hide password fields and show success
+                pwBlock.style.display = 'none';
+                
+                // Redirect after 2 seconds
+                setTimeout(function() {
+                    window.location.href = '<?= app_url('login.php') ?>';
+                }, 2000);
             } else {
                 // Error - show message without redirecting
                 if (errBox) {
                     errBox.textContent = data.message;
                     errBox.classList.remove('d-none');
+                    errBox.classList.remove('text-success');
+                    errBox.classList.add('text-danger');
                 }
                 
                 // Shake password fields for error

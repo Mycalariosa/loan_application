@@ -41,7 +41,7 @@ define('MAIL_SMTP_USER', 'loanapply10@gmail.com');
 define('MAIL_SMTP_PASS', 'nxuu mdmf qdtg ftdv');
 define('MAIL_SMTP_VERIFY_PEER', true);
 
-define('PASSWORD_RESET_OTP_MINUTES', 15);
+define('PASSWORD_RESET_OTP_MINUTES', 5);
 define('PASSWORD_RESET_MAX_PER_HOUR', 3);
 
 define('SESSION_NAME', 'loanapp_sess');
