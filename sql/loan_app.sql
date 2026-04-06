@@ -1,6 +1,9 @@
--- Loan Application System — MySQL 5.7+ / MariaDB
+-- Loan Application System — MySQL 5.7+ / MariaDB (single database)
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE DATABASE IF NOT EXISTS loan_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE loan_app;
 
 DROP TABLE IF EXISTS money_back_transactions;
 DROP TABLE IF EXISTS company_earnings;
@@ -12,6 +15,7 @@ DROP TABLE IF EXISTS savings_accounts;
 DROP TABLE IF EXISTS registration_documents;
 DROP TABLE IF EXISTS blocked_emails;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS password_reset_otps;
 DROP TABLE IF EXISTS users;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -188,6 +192,16 @@ CREATE TABLE notifications (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_sent TINYINT(1) NOT NULL DEFAULT 0,
   KEY idx_notif_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE password_reset_otps (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  otp_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_pwd_reset_user_exp (user_id, expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed admin: username adminuser / password: password (change immediately in production)
