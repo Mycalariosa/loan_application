@@ -187,112 +187,283 @@ foreach ($errors as $e) {
     echo '<div class="alert alert-danger">' . h($e) . '</div>';
 }
 ?>
-<div class="card p-4 mb-4">
-    <h1 class="h4 mb-3">Create account</h1>
-    <form method="post" enctype="multipart/form-data" class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label">Account type *</label>
-            <select name="account_type" class="form-select" required>
-                <option value="">Choose…</option>
-                <option value="basic">Basic — loans only</option>
-                <option value="premium">Premium — loans, savings, money back (max <?= (int) MAX_PREMIUM_MEMBERS ?> members)</option>
-            </select>
+<div class="max-w-5xl mx-auto lg:max-w-4xl">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div class="p-6 sm:p-8">
+
+            <h1 class="text-2xl sm:text-3xl font-bold text-brand mb-6 sm:mb-8 text-center">Create Alpha Loans Account</h1>
+
+            <form method="post" enctype="multipart/form-data" class="space-y-8">
+                <!-- Account Type Selection -->
+                <div class="mb-8">
+                    <h2 class="text-xl font-semibold text-brand mb-4">Choose Your Membership</h2>
+                    <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                        <div id="basic-card" class="border-2 border-gray-300 p-6 rounded-xl hover:border-blue-500 transition cursor-pointer">
+                            <h3 class="text-lg font-bold mb-2">Basic</h3>
+                            <p class="text-gray-600 text-sm mb-4">Standard Loan Access</p>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-center gap-2">✅ Standard Loan Access</li>
+                                <li class="flex items-center gap-2">✅ Monthly Billing Summary</li>
+                                <li class="flex items-center gap-2 opacity-30">❌ Savings Account</li>
+                                <li class="flex items-center gap-2 opacity-30">❌ Money Back Dividends</li>
+                            </ul>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="account_type" value="basic" class="mr-2" required>
+                                <span class="font-medium">Join Basic</span>
+                            </label>
+                        </div>
+                        
+                        <div id="premium-card" class="border-2 border-gray-300 p-6 rounded-xl hover:border-blue-500 transition cursor-pointer">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-xl font-bold">Premium</h3>
+                                <span class="bg-gray-100 text-gray-600 text-xs font-black px-2 py-1 rounded">50 SLOTS ONLY</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-4">Exclusive Benefits</p>
+                            <ul class="space-y-3 text-gray-600 font-medium">
+                                <li class="flex items-center gap-2">✅ All Basic Features</li>
+                                <li class="flex items-center gap-2">✅ <strong>Savings Account (Max 100k)</strong></li>
+                                <li class="flex items-center gap-2">✅ <strong>2% Yearly Company Dividends</strong></li>
+                                <li class="flex items-center gap-2">✅ Earned Money Back</li>
+                            </ul>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="account_type" value="premium" class="mr-2" required>
+                                <span class="font-medium">Get Premium</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="username">Username *</label>
+                        <input type="text" id="username" name="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required minlength="6" value="<?= h($_POST['username'] ?? '') ?>" placeholder="Choose a username (min 6 characters)">
+                        <div class="text-sm text-gray-500 mt-1">Email allowed for username</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="password">Password *</label>
+                        <input type="password" id="password" name="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required autocomplete="new-password" placeholder="Create a strong password">
+                        <div class="text-sm text-gray-500 mt-1">Min 8 characters with uppercase, lowercase, number, and special character</div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="name">Full name *</label>
+                        <input type="text" id="name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['name'] ?? '') ?>" placeholder="Enter your full name">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="address">Address *</label>
+                        <textarea id="address" name="address" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required rows="3" placeholder="Enter your complete address"><?= h($_POST['address'] ?? '') ?></textarea>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="gender">Gender</label>
+                        <select id="gender" name="gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">—</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="birthday">Birthday *</label>
+                        <input type="date" id="birthday" name="birthday" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['birthday'] ?? '') ?>">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="email">Email *</label>
+                        <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['email'] ?? '') ?>" placeholder="your.email@example.com">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="contact_number">Contact number (PH) *</label>
+                        <input type="tel" id="contact_number" name="contact_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="09XXXXXXXXX" value="<?= h($_POST['contact_number'] ?? '') ?>">
+                    </div>
+                </div>
+
+                <!-- Employment & Bank Details -->
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="bank_name">Bank name</label>
+                        <input type="text" id="bank_name" name="bank_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['bank_name'] ?? '') ?>" placeholder="Bank of the Philippines, BPI, etc.">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="bank_account_number">Bank account number</label>
+                        <input type="text" id="bank_account_number" name="bank_account_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['bank_account_number'] ?? '') ?>" placeholder="Your account number">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="card_holder_name">Card holder's name</label>
+                        <input type="text" id="card_holder_name" name="card_holder_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['card_holder_name'] ?? '') ?>" placeholder="Name as it appears on your card">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="tin_number">TIN number</label>
+                        <input type="text" id="tin_number" name="tin_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['tin_number'] ?? '') ?>" placeholder="Tax Identification Number">
+                    </div>
+                </div>
+
+                <!-- Company Details (Premium Only) -->
+                <div id="company-details" class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="company_name">Company name</label>
+                            <input type="text" id="company_name" name="company_name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= h($_POST['company_name'] ?? '') ?>" placeholder="Your company name">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="company_address">Company address</label>
+                            <textarea id="company_address" name="company_address" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required rows="3" placeholder="Complete company address"><?= h($_POST['company_address'] ?? '') ?></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="company_phone">Company phone</label>
+                            <input type="tel" id="company_phone" name="company_phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= h($_POST['company_phone'] ?? '') ?>" placeholder="HR contact number">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="position">Position</label>
+                            <input type="text" id="position" name="position" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= h($_POST['position'] ?? '') ?>" placeholder="Your job position">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="monthly_earnings">Monthly earnings</label>
+                            <input type="number" id="monthly_earnings" name="monthly_earnings" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" min="0" value="<?= h($_POST['monthly_earnings'] ?? '') ?>" placeholder="Your monthly income">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Uploads -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-semibold text-brand mb-4">Required Documents</h2>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="proof_of_billing">Proof of billing</label>
+                            <input type="file" id="proof_of_billing" name="proof_of_billing" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
+                            <div class="text-sm text-gray-500 mt-1">Utility bill, bank statement, etc.</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="valid_id">Valid ID (primary)</label>
+                            <input type="file" id="valid_id" name="valid_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
+                            <div class="text-sm text-gray-500 mt-1">Driver's license, passport, national ID, etc.</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="coe">COE (Certificate of Employment)</label>
+                            <input type="file" id="coe" name="coe" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
+                            <div class="text-sm text-gray-500 mt-1">From your current employer</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex items-center justify-between">
+                    <a href="<?= h(app_url('login.php')) ?>" class="text-blue-600 hover:text-blue-700 transition text-sm">Already have an account? Sign in</a>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition">Create Account</button>
+                </div>
+            </form>
         </div>
-        <div class="col-md-6">
-            <label class="form-label">Username * (min 6 characters; email allowed)</label>
-            <input type="text" name="username" class="form-control" required minlength="6" value="<?= h($_POST['username'] ?? '') ?>">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Password *</label>
-            <input type="password" name="password" class="form-control" required autocomplete="new-password">
-            <div class="form-text">Min 8 characters, uppercase, lowercase, number, special character.</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Full name *</label>
-            <input type="text" name="name" class="form-control" required value="<?= h($_POST['name'] ?? '') ?>">
-        </div>
-        <div class="col-12">
-            <label class="form-label">Address *</label>
-            <textarea name="address" class="form-control" rows="2" required><?= h($_POST['address'] ?? '') ?></textarea>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Gender</label>
-            <select name="gender" class="form-select">
-                <option value="">—</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Birthday *</label>
-            <input type="date" name="birthday" class="form-control" required value="<?= h($_POST['birthday'] ?? '') ?>">
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Email *</label>
-            <input type="email" name="email" class="form-control" required value="<?= h($_POST['email'] ?? '') ?>">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Contact number (PH) *</label>
-            <input type="text" name="contact_number" class="form-control" required placeholder="09XXXXXXXXX" value="<?= h($_POST['contact_number'] ?? '') ?>">
-        </div>
-        <div class="col-12"><hr><h2 class="h6">Bank details *</h2></div>
-        <div class="col-md-4">
-            <label class="form-label">Bank name</label>
-            <input type="text" name="bank_name" class="form-control" required value="<?= h($_POST['bank_name'] ?? '') ?>">
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Bank account number</label>
-            <input type="text" name="bank_account_number" class="form-control" required value="<?= h($_POST['bank_account_number'] ?? '') ?>">
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Card holder's name</label>
-            <input type="text" name="card_holder_name" class="form-control" required value="<?= h($_POST['card_holder_name'] ?? '') ?>">
-            <div class="form-text">Ensure the card holder name matches your bank records to avoid transaction interruptions.</div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">TIN number *</label>
-            <input type="text" name="tin_number" class="form-control" required value="<?= h($_POST['tin_number'] ?? '') ?>">
-        </div>
-        <div class="col-12"><hr><h2 class="h6">Employment *</h2></div>
-        <div class="col-md-6">
-            <label class="form-label">Company name</label>
-            <input type="text" name="company_name" class="form-control" required value="<?= h($_POST['company_name'] ?? '') ?>">
-        </div>
-        <div class="col-12">
-            <label class="form-label">Company address</label>
-            <textarea name="company_address" class="form-control" rows="2" required><?= h($_POST['company_address'] ?? '') ?></textarea>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label">Company phone (prefer HR / employment verification)</label>
-            <input type="text" name="company_phone" class="form-control" required value="<?= h($_POST['company_phone'] ?? '') ?>">
-            <div class="form-text">Use a number that reaches HR to confirm employment when possible.</div>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Position</label>
-            <input type="text" name="position" class="form-control" value="<?= h($_POST['position'] ?? '') ?>">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Monthly earnings</label>
-            <input type="number" name="monthly_earnings" class="form-control" step="0.01" min="0" value="<?= h($_POST['monthly_earnings'] ?? '') ?>">
-        </div>
-        <div class="col-12"><hr><h2 class="h6">Uploads *</h2></div>
-        <div class="col-md-4">
-            <label class="form-label">Proof of billing</label>
-            <input type="file" name="proof_of_billing" class="form-control" accept="image/*,application/pdf" required>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Valid ID (primary)</label>
-            <input type="file" name="valid_id" class="form-control" accept="image/*,application/pdf" required>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">COE (Certificate of Employment)</label>
-            <input type="file" name="coe" class="form-control" accept="image/*,application/pdf" required>
-        </div>
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary">Submit registration</button>
-            <a class="btn btn-link" href="<?= h(app_url('login.php')) ?>">Back to login</a>
-        </div>
-    </form>
+    </div>
 </div>
-<?php render_footer();
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const basicCard = document.getElementById('basic-card');
+    const premiumCard = document.getElementById('premium-card');
+    const basicRadio = document.querySelector('input[name="account_type"][value="basic"]');
+    const premiumRadio = document.querySelector('input[name="account_type"][value="premium"]');
+    
+    function updateCardSelection() {
+        if (basicRadio.checked) {
+            basicCard.classList.add('bg-blue-600', 'text-white', 'shadow-2xl', 'transform', 'scale-105');
+            basicCard.classList.remove('border-gray-300');
+            
+            premiumCard.classList.remove('bg-blue-600', 'text-white', 'shadow-2xl', 'transform', 'scale-105');
+            premiumCard.classList.add('border-gray-300');
+            
+            // Update text colors for selected Basic card
+            basicCard.querySelector('h3').classList.remove('text-gray-700');
+            basicCard.querySelector('h3').classList.add('text-white');
+            basicCard.querySelector('p').classList.remove('text-gray-600');
+            basicCard.querySelector('p').classList.add('text-blue-100');
+            basicCard.querySelectorAll('li').forEach(li => {
+                li.classList.remove('text-gray-600');
+                li.classList.add('text-white');
+            });
+            basicCard.querySelector('span').classList.remove('font-medium');
+            basicCard.querySelector('span').classList.add('font-bold');
+            
+            // Reset Premium card colors
+            premiumCard.querySelector('h3').classList.remove('text-white');
+            premiumCard.querySelector('h3').classList.add('text-gray-700');
+            premiumCard.querySelector('p').classList.remove('text-blue-100');
+            premiumCard.querySelector('p').classList.add('text-gray-600');
+            premiumCard.querySelectorAll('li').forEach(li => {
+                li.classList.remove('text-white');
+                li.classList.add('text-gray-600');
+            });
+            premiumCard.querySelector('span').classList.remove('font-bold');
+            premiumCard.querySelector('span').classList.add('font-medium');
+            
+        } else if (premiumRadio.checked) {
+            premiumCard.classList.add('bg-blue-600', 'text-white', 'shadow-2xl', 'transform', 'scale-105');
+            premiumCard.classList.remove('border-gray-300');
+            
+            basicCard.classList.remove('bg-blue-600', 'text-white', 'shadow-2xl', 'transform', 'scale-105');
+            basicCard.classList.add('border-gray-300');
+            
+            // Update text colors for selected Premium card
+            premiumCard.querySelector('h3').classList.remove('text-gray-700');
+            premiumCard.querySelector('h3').classList.add('text-white');
+            premiumCard.querySelector('p').classList.remove('text-gray-600');
+            premiumCard.querySelector('p').classList.add('text-blue-100');
+            premiumCard.querySelectorAll('li').forEach(li => {
+                li.classList.remove('text-gray-600');
+                li.classList.add('text-white');
+            });
+            premiumCard.querySelector('span').classList.remove('font-medium');
+            premiumCard.querySelector('span').classList.add('font-bold');
+            
+            // Reset Basic card colors
+            basicCard.querySelector('h3').classList.remove('text-white');
+            basicCard.querySelector('h3').classList.add('text-gray-700');
+            basicCard.querySelector('p').classList.remove('text-blue-100');
+            basicCard.querySelector('p').classList.add('text-gray-600');
+            basicCard.querySelectorAll('li').forEach(li => {
+                li.classList.remove('text-white');
+                li.classList.add('text-gray-600');
+            });
+            basicCard.querySelector('span').classList.remove('font-bold');
+            basicCard.querySelector('span').classList.add('font-medium');
+        }
+    }
+    
+    // Make entire cards clickable
+    basicCard.addEventListener('click', function() {
+        basicRadio.checked = true;
+        updateCardSelection();
+    });
+    
+    premiumCard.addEventListener('click', function() {
+        premiumRadio.checked = true;
+        updateCardSelection();
+    });
+    
+    // Handle radio button changes
+    basicRadio.addEventListener('change', updateCardSelection);
+    premiumRadio.addEventListener('change', updateCardSelection);
+    
+    // Initialize with current selection
+    updateCardSelection();
+});
+</script>
+
+<?php render_footer(); ?>

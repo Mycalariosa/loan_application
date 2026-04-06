@@ -96,63 +96,62 @@ render_header('Reset password');
 flash_alert();
 ?>
 
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4 p-md-5">
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200">
+        <div class="p-8">
 
-                <p class="text-muted small text-uppercase mb-1" style="letter-spacing: 0.06em;">
-                    Account recovery
-                </p>
+            <p class="text-gray-500 text-sm uppercase mb-2 tracking-wider">
+                Account recovery
+            </p>
 
-                <h1 class="h3 mb-3">Reset your password</h1>
+            <h1 class="text-3xl font-bold text-brand mb-6">Reset your password</h1>
 
-                <div class="d-flex gap-2 mb-4 small">
-                    <span class="badge rounded-pill <?= $step2 ? 'bg-light text-muted border' : 'bg-primary' ?>">
-                        1. Request code
-                    </span>
-                    <span class="text-muted">→</span>
-                    <span class="badge rounded-pill <?= $step2 ? 'bg-primary' : 'bg-light text-muted border' ?>">
-                        2. Code & new password
-                    </span>
-                </div>
+            <div class="flex gap-2 mb-6 text-sm">
+                <span class="<?= $step2 ? 'bg-gray-100 text-gray-600 border border-gray-300' : 'bg-blue-600 text-white' ?> px-3 py-1 rounded-full font-medium">
+                    1. Request code
+                </span>
+                <span class="text-gray-400">→</span>
+                <span class="<?= $step2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 border border-gray-300' ?> px-3 py-1 rounded-full font-medium">
+                    2. Code & new password
+                </span>
+            </div>
 
                 <?php if (!$step2): ?>
-                    <p class="text-muted mb-4">
-                        Enter your username. We’ll email a one-time code to the address on your account.
+                    <p class="text-gray-600 mb-6">
+                        Enter your username. We'll email a one-time code to the address on your account.
                     </p>
 
-                    <form method="post" class="vstack gap-3">
+                    <form method="post" class="space-y-4">
                         <input type="hidden" name="pw_action" value="send_otp">
 
                         <div>
-                            <label class="form-label fw-semibold" for="fp-user">Username</label>
-                            <input type="text" id="fp-user" name="pw_username" class="form-control" required
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="fp-user">Username</label>
+                            <input type="text" id="fp-user" name="pw_username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required
                                    autocomplete="username" value="<?= h($pwResetUsername) ?>"
                                    placeholder="Your username">
                         </div>
 
-                        <button type="submit" class="btn btn-primary">Send code to email</button>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition">Send code to email</button>
                     </form>
 
                 <?php else: ?>
-                    <form method="post" class="vstack gap-3" id="fp-reset-form" novalidate>
+                    <form method="post" class="space-y-6" id="fp-reset-form" novalidate>
                         <input type="hidden" name="pw_action" value="reset_password">
                         <input type="hidden" name="pw_username" value="<?= h($pwResetUsername) ?>">
                         <input type="hidden" name="pw_otp" id="fp-otp-hidden" value="">
 
                         <!-- OTP -->
                         <div class="otp-verify-block" id="otp-section">
-                            <div class="otp-heading">Verification code</div>
-                            <p class="otp-hint mb-0">
-                                Enter the 6-digit code from your email. 
-                                <span id="otp-countdown" class="text-primary fw-semibold"></span>
+                            <div class="text-lg font-semibold text-brand mb-3">Verification code</div>
+                            <p class="text-gray-600 mb-4">
+                                Enter 6-digit code from your email. 
+                                <span id="otp-countdown" class="text-blue-600 font-semibold"></span>
                             </p>
 
-                            <div class="otp-verify-group mt-2" id="otp-input-group">
+                            <div class="otp-verify-group flex gap-2 justify-center mb-4" id="otp-input-group">
                                 <?php for ($d = 0; $d < 6; $d++): ?>
                                     <input type="text"
-                                           class="form-control otp-digit"
+                                           class="w-12 h-12 text-center text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                            inputmode="numeric"
                                            maxlength="1"
                                            autocomplete="<?= $d === 0 ? 'one-time-code' : 'off' ?>"
@@ -161,50 +160,50 @@ flash_alert();
                                 <?php endfor; ?>
                             </div>
 
-                            <div id="fp-otp-error" class="text-danger d-none text-center mt-2"></div>
+                            <div id="fp-otp-error" class="text-red-600 text-center mt-3 hidden"></div>
                         </div>
 
                         <!-- REQUEST NEW CODE BUTTON (HIDDEN INITIALLY) -->
-                        <div id="request-new-code" style="display:none;" class="mt-3">
-                            <button type="button" class="btn btn-outline-primary w-100" id="btn-request-new">
+                        <div id="request-new-code" class="hidden mt-4">
+                            <button type="button" class="w-full border-2 border-blue-600 text-blue-600 bg-white hover:bg-blue-50 py-3 px-4 rounded-lg font-semibold transition" id="btn-request-new">
                                 Request new verification code
                             </button>
                         </div>
 
                         <!-- PASSWORD BLOCK (HIDDEN INITIALLY) -->
-                        <div id="password-block" style="display:none;" class="vstack gap-3">
+                        <div id="password-block" class="hidden space-y-4">
 
                             <div>
-                                <label class="form-label fw-semibold" for="fp-new">New password</label>
-                                <input type="password" id="fp-new" name="pw_new" class="form-control" required
+                                <label class="block text-sm font-semibold text-gray-700 mb-2" for="fp-new">New password</label>
+                                <input type="password" id="fp-new" name="pw_new" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required
                                        autocomplete="new-password">
-                                <div class="form-text">
+                                <div class="text-sm text-gray-500 mt-1">
                                     At least 8 characters with upper, lower, number, and a special character.
                                 </div>
                             </div>
 
                             <div>
-                                <label class="form-label fw-semibold" for="fp-new2">Confirm new password</label>
-                                <input type="password" id="fp-new2" name="pw_new2" class="form-control" required
+                                <label class="block text-sm font-semibold text-gray-700 mb-2" for="fp-new2">Confirm new password</label>
+                                <input type="password" id="fp-new2" name="pw_new2" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required
                                        autocomplete="new-password">
                             </div>
 
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition">
                                 Update password
                             </button>
 
                         </div>
                     </form>
 
-                    <p class="mt-3 mb-0 small">
-                        <a href="<?= h(app_url('forgot_password.php?restart=1')) ?>" class="text-decoration-none">
+                    <p class="mt-6 text-sm">
+                        <a href="<?= h(app_url('forgot_password.php?restart=1')) ?>" class="text-blue-600 hover:text-blue-700 transition">
                             ← Start over with a different username
                         </a>
                     </p>
                 <?php endif; ?>
 
-                <p class="mt-4 mb-0 text-center">
-                    <a href="<?= h(app_url('login.php')) ?>" class="text-decoration-none">Back to sign in</a>
+                <p class="mt-8 text-center">
+                    <a href="<?= h(app_url('login.php')) ?>" class="text-blue-600 hover:text-blue-700 transition">Back to sign in</a>
                 </p>
 
             </div>
@@ -246,7 +245,7 @@ flash_alert();
         if (timeLeft <= 0) {
             clearInterval(countdownInterval);
             countdownEl.textContent = 'Code expired.';
-            countdownEl.className = 'text-danger fw-semibold';
+            countdownEl.className = 'text-red-600 font-semibold';
             
             // Clear OTP inputs
             cells.forEach(function(cell) {
@@ -257,13 +256,13 @@ flash_alert();
             // Show request new code button
             if (errBox) {
                 errBox.textContent = 'Your verification code has expired. Request a new one below.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
             
             // Show request new code button
             var requestNewBtn = document.getElementById('request-new-code');
             if (requestNewBtn) {
-                requestNewBtn.style.display = 'block';
+                requestNewBtn.classList.remove('hidden');
             }
             
             pwBlock.style.display = 'none';
@@ -340,14 +339,9 @@ flash_alert();
         fetch('', {
             method: 'POST',
             body: formData
-        })
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(data) {
             if (data.ok) {
                 otpValidated = true;
-                if (errBox) errBox.classList.add('d-none');
+                if (errBox) errBox.classList.add('hidden');
                 
                 // Hide entire OTP section and show password block
                 if (otpSection) otpSection.style.display = 'none';
@@ -368,14 +362,14 @@ flash_alert();
                 otpValidated = false;
                 if (errBox) {
                     errBox.textContent = data.message;
-                    errBox.classList.remove('d-none');
+                    errBox.classList.remove('hidden');
                 }
                 pwBlock.style.display = 'none';
                 
                 // Clear all OTP inputs for re-typing
                 cells.forEach(function(cell) {
                     cell.value = '';
-                    cell.classList.remove('is-invalid');
+                    cell.classList.remove('border-red-500', 'ring-red-500', 'ring-2', 'ring-red-500');
                 });
                 hidden.value = '';
                 
@@ -472,15 +466,15 @@ flash_alert();
         if (newPass !== newPass2) {
             if (errBox) {
                 errBox.textContent = 'New passwords do not match.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
             
             // Shake password fields for error
             var pwInputs = document.querySelectorAll('#fp-new, #fp-new2');
             pwInputs.forEach(function(input) {
-                input.classList.add('is-invalid');
+                input.classList.add('border-red-500', 'ring-red-500', 'ring-2');
                 setTimeout(function() {
-                    input.classList.remove('is-invalid');
+                    input.classList.remove('border-red-500', 'ring-red-500', 'ring-2');
                 }, 500);
             });
             return;
@@ -490,15 +484,15 @@ flash_alert();
         if (newPass.length < 8 || !/[A-Z]/.test(newPass) || !/[a-z]/.test(newPass) || !/\d/.test(newPass) || !/[^A-Za-z0-9]/.test(newPass)) {
             if (errBox) {
                 errBox.textContent = 'Password must be at least 8 characters with upper, lower, number, and a special character.';
-                errBox.classList.remove('d-none');
+                errBox.classList.remove('hidden');
             }
             
             // Shake password fields for error
             var pwInputs = document.querySelectorAll('#fp-new, #fp-new2');
             pwInputs.forEach(function(input) {
-                input.classList.add('is-invalid');
+                input.classList.add('border-red-500', 'ring-red-500', 'ring-2');
                 setTimeout(function() {
-                    input.classList.remove('is-invalid');
+                    input.classList.remove('border-red-500', 'ring-red-500', 'ring-2');
                 }, 500);
             });
             return;
