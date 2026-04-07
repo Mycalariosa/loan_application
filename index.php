@@ -12,6 +12,9 @@ if (current_user()) {
     header('Location: ' . $dest);
     exit;
 }
+
+$admin_username = $_COOKIE['admin_username'] ?? '';
+$admin_remember = !empty($admin_username);
 ?>
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -45,7 +48,7 @@ if (current_user()) {
                 
                 <span class="h-4 w-[1px] bg-gray-600"></span>
 
-                <a href="<?php echo app_url('admin/login.php'); ?>" class="text-gray-400 hover:text-white transition">Admin Portal</a>
+                <button onclick="document.getElementById('adminModal').classList.remove('hidden')" class="text-gray-400 hover:text-white transition cursor-pointer">Admin Portal</button>
                 <a href="<?php echo app_url('login.php'); ?>" class="bg-white text-brand px-6 py-2 rounded-full font-bold hover:bg-blue-50 transition shadow-xl">LOGIN</a>
             </div>
         </nav>
@@ -55,8 +58,8 @@ if (current_user()) {
                 Smart.<br>Fast.<br><span class="text-blue-500 text-outline">Transparent.</span>
             </h1>
             <p class="max-w-2xl text-lg text-gray-400 mb-10 leading-relaxed">
-                Get an initial loan of up to **₱10,000** with a fixed **3% interest** deducted upfront. 
-                Choose flexible terms from 1 to 12 months and grow your limit up to **₱50,000** through consistent on-time payments.
+                Get an initial loan of up to *₱10,000* with a fixed *3% interest* deducted upfront. 
+                Choose flexible terms from 1 to 12 months and grow your limit up to *₱50,000* through consistent on-time payments.
             </p>
             <div class="flex flex-wrap gap-6">
                 <a href="<?php echo app_url('register.php'); ?>" class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-full font-bold transition transform hover:scale-105 shadow-2xl">
@@ -181,5 +184,70 @@ if (current_user()) {
         <p class="text-sm opacity-50">&copy; <?php echo date('Y'); ?> Alpha Loans Philippines. Licensed Lending System.</p>
     </footer>
 
-</body>
-</html>
+    <!-- Admin Login Modal -->
+    <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-brand">Admin Login</h2>
+                <button onclick="document.getElementById('adminModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+            </div>
+            
+            <form id="adminLoginForm" method="POST" action="<?php echo app_url('admin.php'); ?>" class="space-y-4">
+                <div>
+                    <label for="admin_email" class="block text-sm font-semibold text-gray-700 mb-2">Email or Username</label>
+                    <input type="text" id="admin_email" name="email" required placeholder="Enter your email or username" value="<?php echo htmlspecialchars($admin_username, ENT_QUOTES); ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                </div>
+
+                <div>
+                    <label for="admin_password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <input type="password" id="admin_password" name="password" required placeholder="Enter your password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="admin_remember" name="remember" class="w-4 h-4 text-blue-600 rounded" <?php echo $admin_remember ? 'checked' : ''; ?>>
+                    <label for="admin_remember" class="ml-2 text-sm text-gray-600">Remember me</label>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition transform hover:scale-105 shadow-lg">
+                    LOGIN
+                </button>
+
+                <div class="text-center">
+                    <a href="<?php echo app_url('forgot_password.php'); ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">Forgot Password?</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Close modal when clicking outside of it
+        document.getElementById('adminModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('adminModal').classList.add('hidden');
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+
