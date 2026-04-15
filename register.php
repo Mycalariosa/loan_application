@@ -13,6 +13,7 @@ if (current_user()) {
 }
 
 $errors = [];
+$selectedAccountType = $_GET['type'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accountType = $_POST['account_type'] ?? '';
     $username = trim((string) ($_POST['username'] ?? ''));
@@ -80,6 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Company name, address, and phone are required.';
     }
 
+    // Profile picture is handled after registration (in user profile)
+    $profilePicturePath = null;
+
     $files = ['proof_of_billing', 'valid_id', 'coe'];
     $uploaded = [];
     foreach ($files as $f) {
@@ -126,12 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $st = $pdo->prepare(
                 'INSERT INTO users (role, username, password_hash, account_type, name, address, gender, birthday, age, email, contact_number,
-                 bank_name, bank_account_number, card_holder_name, tin_number, company_name, company_address, company_phone, position, monthly_earnings,
+                 bank_name, bank_account_number, card_holder_name, tin_number, company_name, company_address, company_phone, position, monthly_earnings, profile_picture_path,
                  registration_status, verified_tag, account_status, current_loan_ceiling, max_loan_term_months)
-                 VALUES (\'user\',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,\'pending\',0,\'active\',?,12)'
+                 VALUES (\'user\',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,\'pending\',0,\'active\',?,12)'
             );
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $earnVal = $earnings === '' ? null : (float) $earnings;
+            
+            // Profile picture will be null during registration (added later in user profile)
+            $profilePicturePath = null;
+            
             $st->execute([
                 $username,
                 $hash,
@@ -152,21 +160,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $companyPhone,
                 $position ?: null,
                 $earnVal,
+                $profilePicturePath,
                 LOAN_INITIAL_CEILING,
             ]);
             $uid = (int) $pdo->lastInsertId();
-            $userDir = UPLOAD_PATH . DIRECTORY_SEPARATOR . $uid;
+            
+            // Create organized directory structure for user documents
+            $userDir = UPLOAD_PATH . DIRECTORY_SEPARATOR . 'documents' . DIRECTORY_SEPARATOR . $uid;
             mkdir($userDir, 0775, true);
 
             $map = ['proof_of_billing' => 'proof_of_billing', 'valid_id' => 'valid_id', 'coe' => 'coe'];
             foreach ($map as $field => $docType) {
                 $ext = pathinfo($uploaded[$field]['name'], PATHINFO_EXTENSION);
-                $safe = $docType . '_' . bin2hex(random_bytes(4)) . '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext);
+                $safe = $docType . '_' . bin2hex(random_bytes(8)) . '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext);
                 $dest = $userDir . DIRECTORY_SEPARATOR . $safe;
                 if (!move_uploaded_file($uploaded[$field]['tmp_name'], $dest)) {
                     throw new RuntimeException('File upload failed.');
                 }
-                $rel = 'uploads/' . $uid . '/' . $safe;
+                $rel = 'documents/' . $uid . '/' . $safe;
                 $pdo->prepare('INSERT INTO registration_documents (user_id, doc_type, file_path) VALUES (?,?,?)')
                     ->execute([$uid, $docType, $rel]);
             }
@@ -208,7 +219,7 @@ foreach ($errors as $e) {
                                 <li class="flex items-center gap-2 opacity-30">❌ Money Back Dividends</li>
                             </ul>
                             <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="account_type" value="basic" class="mr-2" required>
+                                <input type="radio" name="account_type" value="basic" class="mr-2" required <?php echo $selectedAccountType === 'basic' ? 'checked' : ''; ?>>
                                 <span class="font-medium">Join Basic</span>
                             </label>
                         </div>
@@ -226,7 +237,7 @@ foreach ($errors as $e) {
                                 <li class="flex items-center gap-2">✅ Earned Money Back</li>
                             </ul>
                             <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="account_type" value="premium" class="mr-2" required>
+                                <input type="radio" name="account_type" value="premium" class="mr-2" required <?php echo $selectedAccountType === 'premium' ? 'checked' : ''; ?>>
                                 <span class="font-medium">Get Premium</span>
                             </label>
                         </div>
@@ -273,7 +284,8 @@ foreach ($errors as $e) {
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2" for="birthday">Birthday *</label>
-                        <input type="date" id="birthday" name="birthday" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['birthday'] ?? '') ?>">
+                        <input type="date" id="birthday" name="birthday" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['birthday'] ?? '') ?>" max="<?= date('Y-m-d', strtotime('-18 years')) ?>" onchange="checkAgeValidation()">
+                        <div id="age_validation" class="hidden mt-2 p-2 rounded text-sm"></div>
                     </div>
 
                     <div>
@@ -283,7 +295,8 @@ foreach ($errors as $e) {
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2" for="contact_number">Contact number (PH) *</label>
-                        <input type="tel" id="contact_number" name="contact_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="09XXXXXXXXX" value="<?= h($_POST['contact_number'] ?? '') ?>">
+                        <input type="tel" id="contact_number" name="contact_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="09123456789" value="<?= h($_POST['contact_number'] ?? '') ?>">
+                        <div class="text-sm text-gray-500 mt-1">Format: 11-digit PH mobile number (09XXXXXXXXX)</div>
                     </div>
                 </div>
 
@@ -296,7 +309,8 @@ foreach ($errors as $e) {
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2" for="bank_account_number">Bank account number</label>
-                        <input type="text" id="bank_account_number" name="bank_account_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['bank_account_number'] ?? '') ?>" placeholder="Your account number">
+                        <input type="text" id="bank_account_number" name="bank_account_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['bank_account_number'] ?? '') ?>" placeholder="1234567890">
+                        <div class="text-sm text-gray-500 mt-1">Format: 10-12 digit account number</div>
                     </div>
 
                     <div>
@@ -306,7 +320,8 @@ foreach ($errors as $e) {
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2" for="tin_number">TIN number</label>
-                        <input type="text" id="tin_number" name="tin_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['tin_number'] ?? '') ?>" placeholder="Tax Identification Number">
+                        <input type="text" id="tin_number" name="tin_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="<?= h($_POST['tin_number'] ?? '') ?>" placeholder="000-000-000-000">
+                        <div class="text-sm text-gray-500 mt-1">Format: 12-digit TIN (000-000-000-000)</div>
                     </div>
                 </div>
 
@@ -325,7 +340,8 @@ foreach ($errors as $e) {
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2" for="company_phone">Company phone</label>
-                            <input type="tel" id="company_phone" name="company_phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= h($_POST['company_phone'] ?? '') ?>" placeholder="HR contact number">
+                            <input type="tel" id="company_phone" name="company_phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="<?= h($_POST['company_phone'] ?? '') ?>" placeholder="02-1234-5678">
+                        <div class="text-sm text-gray-500 mt-1">Format: Landline or mobile number</div>
                         </div>
 
                         <div>
@@ -346,20 +362,59 @@ foreach ($errors as $e) {
                     <div class="grid md:grid-cols-3 gap-6">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2" for="proof_of_billing">Proof of billing</label>
-                            <input type="file" id="proof_of_billing" name="proof_of_billing" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
+                            <input type="file" id="proof_of_billing" name="proof_of_billing" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required onchange="previewFile('proof_of_billing')">
                             <div class="text-sm text-gray-500 mt-1">Utility bill, bank statement, etc.</div>
+                            <div id="proof_of_billing_preview" class="mt-3 hidden">
+                                <div class="border rounded-lg p-2 bg-gray-50">
+                                    <div id="proof_of_billing_preview_content" class="max-h-48 overflow-hidden"></div>
+                                    <div class="text-xs text-gray-600 mt-1" id="proof_of_billing_info"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="valid_id">Valid ID (primary)</label>
-                            <input type="file" id="valid_id" name="valid_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
-                            <div class="text-sm text-gray-500 mt-1">Driver's license, passport, national ID, etc.</div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="valid_id">Valid Government ID (primary) *</label>
+                            <input type="file" id="valid_id" name="valid_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required onchange="previewFile('valid_id'); validateIDFile('valid_id')">
+                            <div class="mb-2">
+                                <button type="button" onclick="toggleIDList()" class="text-sm font-medium text-blue-800 hover:text-blue-600 transition flex items-center">
+                                    <span id="idListToggle">Show Acceptable IDs</span>
+                                    <svg id="idListArrow" class="w-4 h-4 ml-1 transform transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </button>
+                                <div id="idListContent" class="hidden mt-2 bg-blue-50 border border-blue-200 rounded p-3">
+                                    <ul class="text-xs text-blue-700 space-y-1">
+                                        <li>Driver's License (LTO)</li>
+                                        <li>Passport (Department of Foreign Affairs)</li>
+                                        <li>National ID (Philippine Identification System)</li>
+                                        <li>UMID (Unified Multi-Purpose ID)</li>
+                                        <li>SSS ID</li>
+                                        <li>GSIS ID</li>
+                                        <li>PRC License</li>
+                                        <li>Postal ID</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-500 mb-2">Must show your photo, full name, and ID number clearly</div>
+                            <div id="valid_id_validation" class="hidden mt-2 p-2 rounded text-sm"></div>
+                            <div id="valid_id_preview" class="mt-3 hidden">
+                                <div class="border rounded-lg p-2 bg-gray-50">
+                                    <div id="valid_id_preview_content" class="max-h-48 overflow-hidden"></div>
+                                    <div class="text-xs text-gray-600 mt-1" id="valid_id_info"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2" for="coe">COE (Certificate of Employment)</label>
-                            <input type="file" id="coe" name="coe" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required>
+                            <input type="file" id="coe" name="coe" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept="image/*,application/pdf" required onchange="previewFile('coe')">
                             <div class="text-sm text-gray-500 mt-1">From your current employer</div>
+                            <div id="coe_preview" class="mt-3 hidden">
+                                <div class="border rounded-lg p-2 bg-gray-50">
+                                    <div id="coe_preview_content" class="max-h-48 overflow-hidden"></div>
+                                    <div class="text-xs text-gray-600 mt-1" id="coe_info"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -463,6 +518,307 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize with current selection
     updateCardSelection();
+    
+    // Toggle ID list visibility
+    window.toggleIDList = function() {
+        const content = document.getElementById('idListContent');
+        const toggle = document.getElementById('idListToggle');
+        const arrow = document.getElementById('idListArrow');
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            toggle.textContent = 'Hide Acceptable IDs';
+            arrow.classList.add('rotate-180');
+        } else {
+            content.classList.add('hidden');
+            toggle.textContent = 'Show Acceptable IDs';
+            arrow.classList.remove('rotate-180');
+        }
+    };
+    
+    // Check age validation when user changes birthday
+    window.checkAgeValidation = function() {
+        const birthdayInput = document.getElementById('birthday');
+        const validationDiv = document.getElementById('age_validation');
+        
+        if (birthdayInput.value) {
+            const birthday = new Date(birthdayInput.value);
+            const today = new Date();
+            
+            // Calculate age
+            let age = today.getFullYear() - birthday.getFullYear();
+            const monthDiff = today.getMonth() - birthday.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) {
+                age--;
+            }
+            
+            // Check if user is at least 18
+            if (age < 18) {
+                validationDiv.innerHTML = `
+                    <div class="text-red-600 text-xs mt-1">
+                        Not legal age. Must be 18+ years old (Current: ${age})
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+                birthdayInput.classList.add('border-red-500');
+            } else {
+                validationDiv.classList.add('hidden');
+                birthdayInput.classList.remove('border-red-500');
+            }
+        } else {
+            validationDiv.classList.add('hidden');
+            birthdayInput.classList.remove('border-red-500');
+        }
+    };
+    
+    // Form submission validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const birthdayInput = document.getElementById('birthday');
+        const validationDiv = document.getElementById('age_validation');
+        
+        if (birthdayInput.value) {
+            const birthday = new Date(birthdayInput.value);
+            const today = new Date();
+            
+            // Calculate age
+            let age = today.getFullYear() - birthday.getFullYear();
+            const monthDiff = today.getMonth() - birthday.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) {
+                age--;
+            }
+            
+            // Check if user is at least 18
+            if (age < 18) {
+                e.preventDefault(); // Stop form submission
+                validationDiv.innerHTML = `
+                    <div class="text-red-600 text-xs mt-1">
+                        Not legal age. Must be 18+ years old (Current: ${age})
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+                birthdayInput.classList.add('border-red-500');
+                birthdayInput.focus();
+                return false;
+            } else {
+                validationDiv.classList.add('hidden');
+                birthdayInput.classList.remove('border-red-500');
+            }
+        }
+    });
+    
+    // Age validation function
+    window.validateAge = function() {
+        const birthdayInput = document.getElementById('birthday');
+        const validationDiv = document.getElementById('age_validation');
+        
+        if (birthdayInput.value) {
+            const birthday = new Date(birthdayInput.value);
+            const today = new Date();
+            
+            // Calculate age
+            let age = today.getFullYear() - birthday.getFullYear();
+            const monthDiff = today.getMonth() - birthday.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) {
+                age--;
+            }
+            
+            // Clear previous validation
+            validationDiv.classList.add('hidden');
+            
+            // Check if user is at least 18
+            if (age < 18) {
+                validationDiv.innerHTML = `
+                    <div class="text-red-600 text-xs mt-1">
+                        Not legal age. Must be 18+ years old (Current: ${age})
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+                birthdayInput.classList.add('border-red-500');
+                birthdayInput.classList.remove('border-green-500');
+            } else if (age >= 18 && age <= 120) {
+                validationDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 text-green-800 p-2 rounded">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Age verified: ${age} years old
+                        </div>
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+                birthdayInput.classList.add('border-green-500');
+                birthdayInput.classList.remove('border-red-500');
+            } else if (age > 120) {
+                validationDiv.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-2 rounded">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            Please verify your birth date. Age: ${age} years
+                        </div>
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+                birthdayInput.classList.add('border-yellow-500');
+                birthdayInput.classList.remove('border-green-500', 'border-red-500');
+            }
+        } else {
+            validationDiv.classList.add('hidden');
+            birthdayInput.classList.remove('border-red-500', 'border-green-500', 'border-yellow-500');
+        }
+    };
+    
+    // ID file validation function
+    window.validateIDFile = function(fieldId) {
+        const fileInput = document.getElementById(fieldId);
+        const validationDiv = document.getElementById(fieldId + '_validation');
+        
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
+            
+            // Clear previous validation
+            validationDiv.classList.add('hidden');
+            
+            // Check for common ID indicators in filename
+            const validIDPatterns = [
+                'driver', 'license', 'lto', 'passport', 'national', 'id', 'umid', 
+                'sss', 'gsis', 'prc', 'postal', 'philippine', 'identification'
+            ];
+            
+            // Check for suspicious patterns (random pictures)
+            const suspiciousPatterns = [
+                'img', 'photo', 'picture', 'image', 'selfie', 'snapshot', 
+                'download', 'screenshot', 'whatsapp', 'facebook', 'instagram'
+            ];
+            
+            let isValid = false;
+            let warningMessage = '';
+            
+            // Check if filename suggests it's a valid ID
+            for (let pattern of validIDPatterns) {
+                if (fileName.includes(pattern)) {
+                    isValid = true;
+                    break;
+                }
+            }
+            
+            // Check for suspicious patterns
+            for (let pattern of suspiciousPatterns) {
+                if (fileName.includes(pattern)) {
+                    isValid = false;
+                    warningMessage = 'This appears to be a regular photo, not a government ID. Please upload a valid government-issued ID.';
+                    break;
+                }
+            }
+            
+            // If filename doesn't give clear indication, show warning
+            if (!isValid && !warningMessage) {
+                warningMessage = 'Please ensure this is a valid government ID (Driver\'s License, Passport, National ID, etc.)';
+                isValid = false;
+            }
+            
+            // Show validation result
+            if (!isValid) {
+                validationDiv.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-2 rounded">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            ${warningMessage}
+                        </div>
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+            } else {
+                validationDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 text-green-800 p-2 rounded">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Valid government ID detected
+                        </div>
+                    </div>
+                `;
+                validationDiv.classList.remove('hidden');
+            }
+        } else {
+            validationDiv.classList.add('hidden');
+        }
+    };
+    
+    // File preview function
+    window.previewFile = function(fieldId) {
+        const fileInput = document.getElementById(fieldId);
+        const previewDiv = document.getElementById(fieldId + '_preview');
+        const previewContent = document.getElementById(fieldId + '_preview_content');
+        const fileInfo = document.getElementById(fieldId + '_info');
+        
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const fileName = file.name;
+            const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            
+            // Show file info
+            fileInfo.innerHTML = `<strong>${fileName}</strong> (${fileSize})`;
+            
+            // Clear previous preview
+            previewContent.innerHTML = '';
+            
+            if (file.type.startsWith('image/')) {
+                // Show image preview
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'max-w-full h-auto mx-auto rounded';
+                img.style.maxHeight = '192px';
+                img.style.objectFit = 'contain';
+                previewContent.appendChild(img);
+            } else if (file.type === 'application/pdf') {
+                // Show PDF preview with icon
+                const pdfDiv = document.createElement('div');
+                pdfDiv.className = 'text-center py-8';
+                pdfDiv.innerHTML = `
+                    <svg class="w-16 h-16 mx-auto text-red-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-sm font-medium text-gray-700">PDF Document</p>
+                    <p class="text-xs text-gray-500">Click to view if supported</p>
+                `;
+                previewContent.appendChild(pdfDiv);
+                
+                // Add click to open PDF
+                pdfDiv.style.cursor = 'pointer';
+                pdfDiv.onclick = function() {
+                    window.open(URL.createObjectURL(file), '_blank');
+                };
+            } else {
+                // Show generic file icon
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'text-center py-8';
+                fileDiv.innerHTML = `
+                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-sm font-medium text-gray-700">File</p>
+                    <p class="text-xs text-gray-500">${file.type || 'Unknown type'}</p>
+                `;
+                previewContent.appendChild(fileDiv);
+            }
+            
+            // Show preview container
+            previewDiv.classList.remove('hidden');
+        } else {
+            // Hide preview if no file selected
+            previewDiv.classList.add('hidden');
+        }
+    };
 });
 </script>
 

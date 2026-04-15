@@ -34,8 +34,9 @@ $admin_remember = !empty($admin_username);
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <header id="home" class="bg-brand text-white min-h-[90vh] flex flex-col relative overflow-hidden">
-        <nav class="flex justify-between items-center px-6 md:px-10 py-8 z-50">
+    <!-- Sticky Navigation -->
+    <nav class="fixed top-0 left-0 right-0 bg-brand text-white px-6 md:px-10 py-4 z-50 shadow-lg">
+        <div class="flex justify-between items-center">
             <div class="text-2xl font-extrabold tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 ALPHA<span class="text-blue-500">LOANS</span>
             </div>
@@ -48,11 +49,14 @@ $admin_remember = !empty($admin_username);
                 
                 <span class="h-4 w-[1px] bg-gray-600"></span>
 
-                <button onclick="document.getElementById('adminModal').classList.remove('hidden')" class="text-gray-400 hover:text-white transition cursor-pointer">Admin Portal</button>
                 <a href="<?php echo app_url('login.php'); ?>" class="bg-white text-brand px-6 py-2 rounded-full font-bold hover:bg-blue-50 transition shadow-xl">LOGIN</a>
             </div>
-        </nav>
+        </div>
+    </nav>
 
+    <!-- Hero Section -->
+    <!-- Hero Section -->
+    <header id="home" class="bg-brand text-white min-h-[90vh] flex flex-col relative overflow-hidden pt-16">
         <div class="flex-grow flex flex-col justify-center px-10 md:px-24 z-10">
             <h1 class="text-6xl md:text-8xl font-black leading-none mb-6 tracking-tighter">
                 Smart.<br>Fast.<br><span class="text-blue-500 text-outline">Transparent.</span>
@@ -125,30 +129,30 @@ $admin_remember = !empty($admin_username);
             <p class="text-gray-400">Unlock advanced features with our Premium tier.</p>
         </div>
         <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <div class="border border-gray-700 p-10 rounded-3xl hover:border-blue-500 transition">
-                <h3 class="text-2xl font-bold mb-2">Basic</h3>
-                <p class="text-blue-400 text-sm mb-6">Unlimited Slots Available</p>
-                <ul class="space-y-4 text-gray-300 mb-10">
+            <div class="border border-gray-300 bg-gray-800 p-10 rounded-3xl hover:bg-blue-600 hover:border-blue-600 transition-all duration-300 group">
+                <h3 class="text-2xl font-bold mb-2 text-white group-hover:text-white">Basic</h3>
+                <p class="text-gray-300 text-sm mb-6 group-hover:text-blue-100">Unlimited Slots Available</p>
+                <ul class="space-y-4 text-gray-300 mb-10 group-hover:text-white">
                     <li class="flex items-center gap-2">✅ Standard Loan Access</li>
                     <li class="flex items-center gap-2">✅ Monthly Billing Summary</li>
-                    <li class="flex items-center gap-2 opacity-30">❌ Savings Account</li>
-                    <li class="flex items-center gap-2 opacity-30">❌ Money Back Dividends</li>
+                    <li class="flex items-center gap-2 opacity-50">❌ Savings Account</li>
+                    <li class="flex items-center gap-2 opacity-50">❌ Money Back Dividends</li>
                 </ul>
-                <button class="w-full py-3 border border-white rounded-xl font-bold hover:bg-white hover:text-brand transition">Join Basic</button>
+                <a href="register.php?type=basic" class="block w-full py-3 bg-white text-gray-800 rounded-xl font-bold hover:bg-blue-50 transition text-center">Join Basic</a>
             </div>
-            <div class="bg-blue-600 p-10 rounded-3xl shadow-2xl transform scale-105">
+            <div class="border border-gray-300 bg-gray-800 p-10 rounded-3xl hover:bg-blue-600 hover:border-blue-600 transition-all duration-300 group transform scale-105">
                 <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-2xl font-bold">Premium</h3>
-                    <span class="bg-white text-blue-600 text-[10px] font-black px-2 py-1 rounded">50 SLOTS ONLY</span>
+                    <h3 class="text-2xl font-bold text-white group-hover:text-white">Premium</h3>
+                    <span class="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded group-hover:bg-white group-hover:text-blue-600">50 SLOTS ONLY</span>
                 </div>
-                <p class="text-blue-100 text-sm mb-6">Exclusive Benefits</p>
-                <ul class="space-y-4 text-white mb-10 font-medium">
+                <p class="text-gray-300 text-sm mb-6 group-hover:text-blue-100">Exclusive Benefits</p>
+                <ul class="space-y-4 text-gray-300 mb-10 group-hover:text-white">
                     <li class="flex items-center gap-2">✅ All Basic Features</li>
                     <li class="flex items-center gap-2">✅ **Savings Account (Max 100k)**</li>
                     <li class="flex items-center gap-2">✅ **2% Yearly Company Dividends**</li>
                     <li class="flex items-center gap-2">✅ Earned Money Back</li>
                 </ul>
-                <button class="w-full py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition">Get Premium</button>
+                <a href="register.php?type=premium" class="block w-full py-3 bg-white text-gray-800 rounded-xl font-bold hover:bg-blue-50 transition text-center">Get Premium</a>
             </div>
         </div>
     </section>
@@ -184,70 +188,4 @@ $admin_remember = !empty($admin_username);
         <p class="text-sm opacity-50">&copy; <?php echo date('Y'); ?> Alpha Loans Philippines. Licensed Lending System.</p>
     </footer>
 
-    <!-- Admin Login Modal -->
-    <div id="adminModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-brand">Admin Login</h2>
-                <button onclick="document.getElementById('adminModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
-            </div>
-            
-            <form id="adminLoginForm" method="POST" action="<?php echo app_url('admin.php'); ?>" class="space-y-4">
-                <div>
-                    <label for="admin_email" class="block text-sm font-semibold text-gray-700 mb-2">Email or Username</label>
-                    <input type="text" id="admin_email" name="email" required placeholder="Enter your email or username" value="<?php echo htmlspecialchars($admin_username, ENT_QUOTES); ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                </div>
-
-                <div>
-                    <label for="admin_password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                    <input type="password" id="admin_password" name="password" required placeholder="Enter your password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" id="admin_remember" name="remember" class="w-4 h-4 text-blue-600 rounded" <?php echo $admin_remember ? 'checked' : ''; ?>>
-                    <label for="admin_remember" class="ml-2 text-sm text-gray-600">Remember me</label>
-                </div>
-
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition transform hover:scale-105 shadow-lg">
-                    LOGIN
-                </button>
-
-                <div class="text-center">
-                    <a href="<?php echo app_url('forgot_password.php'); ?>" class="text-blue-600 hover:text-blue-700 text-sm font-medium">Forgot Password?</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Close modal when clicking outside of it
-        document.getElementById('adminModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.getElementById('adminModal').classList.add('hidden');
-            }
-        });
-    </script>
-
-    <style>
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-    </style>
 
